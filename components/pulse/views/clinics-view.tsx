@@ -10,14 +10,16 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/co
 import { Slider } from '@/components/ui/slider';
 import { Button } from '@/components/ui/button';
 import { ClinicMap } from '../clinic-map';
+import { PaymentModal } from '../payment-modal';
 
 interface ClinicDetailsProps {
   clinic: (typeof clinics)[0];
   onClose: () => void;
   onViewMap: () => void;
+  onBook: () => void;
 }
 
-function ClinicDetails({ clinic, onClose, onViewMap }: ClinicDetailsProps) {
+function ClinicDetails({ clinic, onClose, onViewMap, onBook }: ClinicDetailsProps) {
   const [copied, setCopied] = useState(false);
 
   const handleCopyCode = () => {
@@ -94,6 +96,7 @@ function ClinicDetails({ clinic, onClose, onViewMap }: ClinicDetailsProps) {
 
       <motion.button
         whileTap={{ scale: 0.97 }}
+        onClick={onBook}
         className="w-full py-4 px-6 bg-[#84CC16] text-white rounded-2xl font-bold text-base hover:bg-[#84CC16]/90 transition-colors"
       >
         Book Appointment
@@ -125,6 +128,7 @@ export function ClinicsView() {
   const [sortBy, setSortBy] = useState<'distance' | 'rating' | 'discount'>('distance');
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [mapClinic, setMapClinic] = useState<(typeof clinics)[0] | null>(null);
+  const [paymentClinic, setPaymentClinic] = useState<(typeof clinics)[0] | null>(null);
 
   // Get today's AI analysis for context banner
   const todayEntry = amaraFullStory[amaraFullStory.length - 1];
@@ -330,6 +334,9 @@ export function ClinicsView() {
               onViewMap={() => {
                 setMapClinic(selectedClinic);
               }}
+              onBook={() => {
+                setPaymentClinic(selectedClinic);
+              }}
             />
           ) : (
             <motion.div
@@ -409,6 +416,23 @@ export function ClinicsView() {
             phone={mapClinic.phone}
             hours={mapClinic.hours}
             onClose={() => setMapClinic(null)}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Payment Modal */}
+      <AnimatePresence>
+        {paymentClinic && (
+          <PaymentModal
+            clinicName={paymentClinic.name}
+            consultationType="consultation"
+            originalPrice={15000}
+            discountPercent={parseInt(paymentClinic.discount)}
+            onClose={() => setPaymentClinic(null)}
+            onSuccess={() => {
+              // Handle successful booking
+              console.log('Booking successful!');
+            }}
           />
         )}
       </AnimatePresence>
