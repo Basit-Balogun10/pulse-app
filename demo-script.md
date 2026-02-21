@@ -584,8 +584,8 @@ You've now demonstrated:
 - [ ] Validation tracking (true positive / false positive outcomes)
 - [x] Auto-booking card (appears after 3+ nudges with 100% discount)
 - [x] Auto-booking modification flow (change clinic, date, time)
-- [ ] Chat interface with AI assistant
-- [ ] Chat detection context tracking (extract relevant health info from messages)
+- [x] Chat interface with AI assistant (full health context, streaming responses from Gemini API)
+- [x] Chat detection context tracking (extract health info from messages, display detection count)
 - [x] Profile screen displaying health profile fields
 - [ ] Editable health profile form (all fields updatable)
 - [ ] Billing & subscription view (current plan, discount tier, auto-booking eligibility)

@@ -2,26 +2,32 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Send, X, MessageCircle, Maximize2, Minimize2, Paperclip, Image as ImageIcon, Mic } from 'lucide-react';
+import { Send, X, MessageCircle, Maximize2, Minimize2, Paperclip, Image as ImageIcon, Mic, Sparkles } from 'lucide-react';
+import { streamGeminiResponse } from '@/lib/gemini';
+import { userProfile } from '@/lib/mock-data';
+import { amaraFullStory, amaraChatDetections, type ChatDetection } from '@/lib/amara-story-data';
 
 interface Message {
   id: string;
   type: 'user' | 'ai';
   text: string;
   timestamp: Date;
+  isStreaming?: boolean;
 }
 
 interface ChatBoxProps {
   isOpen: boolean;
   onClose: () => void;
+  checkInHistory?: typeof amaraFullStory;
+  currentConcerns?: string[];
 }
 
-export function ChatBox({ isOpen, onClose }: ChatBoxProps) {
+export function ChatBox({ isOpen, onClose, checkInHistory = amaraFullStory, currentConcerns = [] }: ChatBoxProps) {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
       type: 'ai',
-      text: 'Hi! I\'m Pulse AI. I\'ve analyzed your health data and noticed some interesting patterns. Ask me anything about your wellness!',
+      text: `Hi ${userProfile.name}! I'm Pulse AI and I have full context of your health journey. I've been tracking your 14-day check-in history and noticed some patterns. Ask me anything about your wellness, symptoms, or recommendations!`,
       timestamp: new Date(),
     },
   ]);
@@ -29,6 +35,7 @@ export function ChatBox({ isOpen, onClose }: ChatBoxProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
+  const [detectedInfo, setDetectedInfo] = useState<ChatDetection[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
@@ -45,11 +52,13 @@ export function ChatBox({ isOpen, onClose }: ChatBoxProps) {
     e.preventDefault();
     if (!inputValue.trim()) return;
 
+    const userInput = inputValue.trim();
+    
     // Add user message
     const userMessage: Message = {
       id: Date.now().toString(),
       type: 'user',
-      text: inputValue,
+      text: userInput,
       timestamp: new Date(),
     };
 
@@ -57,43 +66,136 @@ export function ChatBox({ isOpen, onClose }: ChatBoxProps) {
     setInputValue('');
     setIsLoading(true);
 
-    // Simulate AI response delay
-    setTimeout(() => {
-      const aiMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        type: 'ai',
-        text: generateAIResponse(inputValue),
-        timestamp: new Date(),
-      };
-      setMessages((prev) => [...prev, aiMessage]);
+    // Detect health-related information in user message
+    detectHealthInfo(userInput);
+
+    // Create streaming AI message placeholder
+    const aiMessageId = (Date.now() + 1).toString();
+    const aiMessage: Message = {
+      id: aiMessageId,
+      type: 'ai',
+      text: '',
+      timestamp: new Date(),
+      isStreaming: true,
+    };
+    
+    setMessages((prev) => [...prev, aiMessage]);
+
+    try {
+      // Build health context for AI
+      const healthContext = buildHealthContext(checkInHistory, currentConcerns);
+      const prompt = `${healthContext}\n\nUser question: ${userInput}\n\nProvide a helpful, empathetic response based on the health data above. Be specific and reference patterns when relevant.`;
+
+      let fullResponse = '';
+      
+      await streamGeminiResponse(
+        prompt,
+        (chunk) => {
+          fullResponse += chunk;
+          setMessages((prev) =>
+            prev.map((msg) =>
+              msg.id === aiMessageId
+                ? { ...msg, text: fullResponse, isStreaming: true }
+                : msg
+            )
+          );
+        },
+        () => {
+          // On complete
+          setMessages((prev) =>
+            prev.map((msg) =>
+              msg.id === aiMessageId
+                ? { ...msg, isStreaming: false }
+                : msg
+            )
+          );
+          setIsLoading(false);
+        },
+        (error) => {
+          console.error('Chat error:', error);
+          setMessages((prev) =>
+            prev.map((msg) =>
+              msg.id === aiMessageId
+                ? { ...msg, text: 'I apologize, but I encountered an error. Please try again.', isStreaming: false }
+                : msg
+            )
+          );
+          setIsLoading(false);
+        }
+      );
+    } catch (error) {
+      console.error('Error sending message:', error);
       setIsLoading(false);
-    }, 1000);
+    }
   };
 
-  const generateAIResponse = (userInput: string): string => {
-    const lowerInput = userInput.toLowerCase();
+  // Build comprehensive health context for AI
+  const buildHealthContext = (history: typeof amaraFullStory, concerns: string[]) => {
+    const recentDays = history.slice(-7); // Last 7 days
+    const todayEntry = history[history.length - 1];
+    
+    let context = `HEALTH PROFILE:\n`;
+    context += `Name: ${userProfile.name}\n`;
+    context += `Age: ${userProfile.age}\n`;
+    context += `Family History: ${userProfile.familyHistory?.join(', ') || 'None'}\n`;
+    context += `Last Checkup: ${userProfile.lastCheckup || 'Unknown'}\n\n`;
+    
+    context += `RECENT CHECK-IN SUMMARY (Last 7 days):\n`;
+    recentDays.forEach((day, idx) => {
+      context += `Day ${idx + 1} (${day.date}):\n`;
+      context += `  Energy: ${day.energy}/5\n`;
+      context += `  Sleep: ${day.sleep?.hours || 'N/A'}hrs, Quality: ${day.sleep?.quality || 'N/A'}\n`;
+      context += `  Mood: ${day.mood}/5\n`;
+      if (day.symptoms && day.symptoms.length > 0) {
+        context += `  Symptoms: ${day.symptoms.join(', ')}\n`;
+      }
+    });
+    
+    if (todayEntry.aiAnalysis) {
+      context += `\nTODAY'S AI ANALYSIS:\n${todayEntry.aiAnalysis}\n`;
+    }
+    
+    if (concerns.length > 0) {
+      context += `\nCURRENT CONCERNS: ${concerns.join(', ')}\n`;
+    }
+    
+    return context;
+  };
 
-    if (lowerInput.includes('energy') || lowerInput.includes('tired')) {
-      return 'I notice your energy levels have been fluctuating. Try getting more consistent sleep—your sleep quality has a direct impact on daily energy. Also, staying hydrated and moving throughout the day can help stabilize your energy.';
+  // Detect health information from user messages
+  const detectHealthInfo = (message: string) => {
+    const lowerMessage = message.toLowerCase();
+    const detected: Partial<ChatDetection> = {
+      date: new Date().toISOString().split('T')[0],
+      source: 'chat',
+    };
+
+    // Detect symptoms
+    const symptomKeywords = ['pain', 'ache', 'fever', 'headache', 'nausea', 'dizzy', 'tired', 'fatigue'];
+    const foundSymptoms = symptomKeywords.filter(s => lowerMessage.includes(s));
+    if (foundSymptoms.length > 0) {
+      detected.type = 'symptom';
+      detected.value = foundSymptoms.join(', ');
+      detected.context = message;
     }
 
-    if (lowerInput.includes('sleep')) {
-      return 'Your sleep patterns show you\'re averaging 7-8 hours, which is great! The key is maintaining consistency. Try keeping the same bedtime and wake time daily. Your mood and energy both improve when sleep is regular.';
+    // Detect medications
+    if (lowerMessage.includes('taking') || lowerMessage.includes('medication') || lowerMessage.includes('pill')) {
+      detected.type = 'medication';
+      detected.context = message;
     }
 
-    if (lowerInput.includes('mood') || lowerInput.includes('feeling')) {
-      return 'Your mood has been generally positive, with a few dips that correlate with lower sleep quality. When you\'re getting good rest and staying active, your mood metrics improve significantly. Keep monitoring this.';
+    // Detect lifestyle changes
+    if (lowerMessage.includes('started') || lowerMessage.includes('stopped') || lowerMessage.includes('changed')) {
+      detected.type = 'lifestyle_change';
+      detected.context = message;
     }
 
-    if (lowerInput.includes('appointment') || lowerInput.includes('clinic')) {
-      return 'Based on your recent data, I recommend scheduling a wellness check-up. I\'ve noticed some mild respiratory variations that would be good to discuss with a professional. Would you like me to show you nearby clinics?';
+    // Store detection if found
+    if (detected.type) {
+      setDetectedInfo((prev) => [...prev, detected as ChatDetection]);
+      console.log('Health info detected:', detected);
     }
-
-    if (lowerInput.includes('symptom')) {
-      return 'Your symptom tracking shows mostly clear days with occasional mild fatigue. This is a positive trend! Keep tracking consistently so we can identify any patterns early.';
-    }
-
-    return 'That\'s a great question! Based on your health data, I\'d recommend focusing on consistent sleep schedules and staying hydrated. These two factors have the biggest impact on your overall wellness score. Is there anything specific you\'d like to explore?';
   };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -229,6 +331,18 @@ export function ChatBox({ isOpen, onClose }: ChatBoxProps) {
               </div>
             </div>
 
+            {/* Health Context Banner */}
+            {detectedInfo.length > 0 && (
+              <div className="px-6 py-3 bg-[#818CF8]/10 border-b border-[#818CF8]/20">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-[#818CF8]" />
+                  <p className="text-xs font-medium text-[#818CF8]">
+                    Detected {detectedInfo.length} health insight{detectedInfo.length > 1 ? 's' : ''} from your messages
+                  </p>
+                </div>
+              </div>
+            )}
+
             {/* Messages Container */}
             <div className="flex-1 overflow-y-auto p-6 space-y-4">
               {messages.map((message) => (
@@ -247,7 +361,13 @@ export function ChatBox({ isOpen, onClose }: ChatBoxProps) {
                         : 'bg-muted text-foreground rounded-bl-none'
                     }`}
                   >
-                    <p className="text-sm leading-relaxed">{message.text}</p>
+                    <p className="text-sm leading-relaxed whitespace-pre-line">{message.text}</p>
+                    {message.isStreaming && (
+                      <div className="flex items-center gap-1 mt-1">
+                        <div className="w-1 h-1 bg-[#818CF8] rounded-full animate-pulse" />
+                        <span className="text-xs text-muted-foreground">AI is typing...</span>
+                      </div>
+                    )}
                     <p
                       className={`text-xs mt-1 ${
                         message.type === 'user'
