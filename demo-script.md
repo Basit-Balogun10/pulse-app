@@ -577,11 +577,11 @@ You've now demonstrated:
 - [x] AI analysis card on home screen (appears after check-in)
 - [ ] AI analysis overview/summary screen with two buttons (Book Clinic + See Detailed Analysis)
 - [x] Detailed AI analysis modal with structured JSON-like presentation, day citations, and reasoning
-- [ ] Analytics/Visualizations view with interactive graphs and charts (mood, sleep, energy trends with filtering)
+- [x] Analytics/Visualizations view with interactive graphs and charts (mood, sleep, energy trends with filtering)
 - [x] Nudge tracking system (count nudges, store in localStorage, display badge on analysis card)
 - [x] Feedback loop modal (appears on next check-in after nudge, tracks outcomes, uploads reports)
-- [ ] Doctor report upload flow (file upload + skip option)
-- [ ] Validation tracking (true positive / false positive outcomes)
+- [x] Doctor report upload flow (file upload + skip option)
+- [x] Validation tracking (true positive / false positive outcomes)
 - [x] Auto-booking card (appears after 3+ nudges with 100% discount)
 - [x] Auto-booking modification flow (change clinic, date, time)
 - [x] Chat interface with AI assistant (full health context, streaming responses from Gemini API)
@@ -589,14 +589,14 @@ You've now demonstrated:
 - [x] Profile screen displaying health profile fields
 - [x] Editable health profile form (all fields updatable with localStorage persistence)
 - [x] Billing & subscription view (tiers, discounts, subscription plans, active discount code)
-- [ ] Subscription management options (change plan, payment method, history)
+- [x] Subscription management options (change plan, payment method, history)
 
 ### Clinic Partner Components
 
 - [x] Clinic partner onboarding (similar to user onboarding - collect clinic details)
 - [x] Clinic dashboard with appointment notifications
 - [x] Clinic profile management (specialties, pricing, location, hours)
-- [ ] Embedded map or geocoded address display for clinic location
+- [x] Embedded map or geocoded address display for clinic location
 - [ ] Appointment acceptance/rescheduling workflow
 
 ### Clinics Tab Enhancements
@@ -604,10 +604,10 @@ You've now demonstrated:
 - [x] Enhanced clinics view with search bar
 - [x] Advanced filter sheet (distance slider, rating slider, specialty chips)
 - [x] Sorting functionality (by distance, rating, discount)
-- [ ] Context banner showing relevant specialties from AI analysis
+- [x] Context banner showing relevant specialties from AI analysis
 - [ ] Clinic detail screen with map, specialties, pricing, discount, booking button
 - [ ] Time slot selection for booking
-- [ ] Payment processing screen (mock UI)
+- [x] Payment processing screen (mock UI)
 - [ ] Booking confirmation screen with redemption code
 
 ### Mock Data Requirements
