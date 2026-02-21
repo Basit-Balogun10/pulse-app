@@ -578,7 +578,7 @@ You've now demonstrated:
 - [ ] AI analysis overview/summary screen with two buttons (Book Clinic + See Detailed Analysis)
 - [x] Detailed AI analysis modal with structured JSON-like presentation, day citations, and reasoning
 - [ ] Analytics/Visualizations view with interactive graphs and charts (mood, sleep, energy trends with filtering)
-- [ ] Nudge tracking system (count nudges, store in user data)
+- [x] Nudge tracking system (count nudges, store in localStorage, display badge on analysis card)
 - [ ] Feedback loop modal (appears on next check-in after nudge)
 - [ ] Doctor report upload flow (file upload + skip option)
 - [ ] Validation tracking (true positive / false positive outcomes)

@@ -8,6 +8,8 @@ import { amaraFullStory } from '@/lib/amara-story-data';
 import { DayCarousel } from '@/components/pulse/day-carousel';
 import { AnalysisModal, generateInsight } from '@/components/pulse/analysis-modal';
 import { weatherSummary, getWeatherContext } from '@/lib/weather';
+import { useNudgeTracking } from '@/hooks/use-nudge-tracking';
+import { Badge } from '@/components/ui/badge';
 
 const TODAY = amaraFullStory[amaraFullStory.length - 1].date; // 2026-02-21 (Day 15)
 
@@ -32,6 +34,8 @@ export function HomeView({ onChatOpen, onStartCheckIn, todayEntry }: HomeViewPro
   const [showAnalysisModal, setShowAnalysisModal] = useState(false);
   const [analysisLoading, setAnalysisLoading] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<string | null>(null);
+  
+  const { nudgeCount, shouldAutoBook, shouldShowNudge } = useNudgeTracking();
 
   useEffect(() => {
     setSubheading(SUBHEADINGS[Math.floor(Math.random() * SUBHEADINGS.length)]);
@@ -153,19 +157,34 @@ export function HomeView({ onChatOpen, onStartCheckIn, todayEntry }: HomeViewPro
               variants={item(2)} initial="hidden" animate="visible"
               onClick={handleOpenAnalysis}
               whileTap={{ scale: 0.98 }}
-              className="bg-gradient-to-br from-[#818CF8]/10 to-[#A855F7]/10 rounded-3xl p-5 border border-[#818CF8]/20 cursor-pointer hover:border-[#818CF8]/40 transition-colors"
+              className="bg-gradient-to-br from-[#818CF8]/10 to-[#A855F7]/10 rounded-3xl p-5 border border-[#818CF8]/20 cursor-pointer hover:border-[#818CF8]/40 transition-colors relative"
             >
+              {shouldShowNudge && (
+                <Badge className="absolute top-4 right-4 bg-[#F97316] text-white border-0 px-2 py-0.5 text-xs font-bold">
+                  {nudgeCount} {nudgeCount === 1 ? 'Nudge' : 'Nudges'}
+                </Badge>
+              )}
               <div className="flex items-center gap-3 mb-3">
                 <div className="w-10 h-10 rounded-2xl bg-[#818CF8]/20 flex items-center justify-center">
                   <Sparkles className="w-5 h-5 text-[#818CF8]" />
                 </div>
                 <div>
                   <p className="font-bold text-foreground text-sm">AI Analysis Available</p>
-                  <p className="text-xs text-muted-foreground">Tap to view today's insights</p>
+                  <p className="text-xs text-muted-foreground">
+                    {shouldAutoBook 
+                      ? 'Auto-booking recommended' 
+                      : shouldShowNudge 
+                        ? 'Checkup recommended' 
+                        : 'Tap to view today's insights'
+                    }
+                  </p>
                 </div>
               </div>
               <p className="text-sm text-foreground/70 leading-relaxed">
-                Your daily check-in has been analyzed. View personalized health insights and recommendations based on your entries.
+                {shouldAutoBook 
+                  ? `You've ignored ${nudgeCount} checkup recommendations. We recommend immediate booking with 100% discount.`
+                  : 'Your daily check-in has been analyzed. View personalized health insights and recommendations based on your entries.'
+                }
               </p>
             </motion.div>
           )}
