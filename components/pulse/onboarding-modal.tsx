@@ -59,7 +59,7 @@ export function OnboardingModal({
             animate={{ y: 0 }}
             exit={{ y: 600 }}
             transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-            className="fixed bottom-0 left-0 right-0 bg-white rounded-t-3xl p-6 z-50 max-h-[90vh] overflow-y-auto"
+            className="fixed bottom-0 left-0 right-0 bg-card rounded-t-3xl p-6 z-50 max-h-[90vh] overflow-y-auto border-t border-border"
           >
             {/* Header */}
             <div className="flex items-center justify-between mb-6">

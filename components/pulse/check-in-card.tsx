@@ -114,7 +114,7 @@ export function CheckInCard({
   ];
 
   return (
-    <div className="rounded-3xl bg-white p-6 shadow-lg border border-border">
+    <div className="rounded-3xl bg-card p-6 shadow-lg border border-border">
       {/* Icon and Label */}
       <div className="text-center mb-8">
         <motion.div

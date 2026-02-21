@@ -111,7 +111,7 @@ export function ChatBox({ isOpen, onClose }: ChatBoxProps) {
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: 600, opacity: 0 }}
             transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-            className="fixed bottom-0 left-0 right-0 bg-white rounded-t-3xl shadow-2xl z-50 h-[70vh] flex flex-col"
+            className="fixed bottom-0 left-0 right-0 bg-card rounded-t-3xl shadow-2xl z-50 h-[70vh] flex flex-col border-t border-border"
           >
             {/* Header */}
             <div className="flex items-center justify-between p-6 border-b border-border">

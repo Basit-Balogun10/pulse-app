@@ -110,7 +110,7 @@ export function ProfileView() {
         <div className="space-y-4 mb-8">
           <motion.div
             variants={itemVariants}
-            className="bg-white rounded-2xl p-6 border border-border"
+            className="bg-card rounded-2xl p-6 border border-border"
           >
             <p className="text-xs text-muted-foreground uppercase font-semibold mb-2">
               Medical Conditions
@@ -122,7 +122,7 @@ export function ProfileView() {
 
           <motion.div
             variants={itemVariants}
-            className="bg-white rounded-2xl p-6 border border-border"
+            className="bg-card rounded-2xl p-6 border border-border"
           >
             <p className="text-xs text-muted-foreground uppercase font-semibold mb-2">
               Current Medications
@@ -134,7 +134,7 @@ export function ProfileView() {
 
           <motion.div
             variants={itemVariants}
-            className="bg-white rounded-2xl p-6 border border-border"
+            className="bg-card rounded-2xl p-6 border border-border"
           >
             <p className="text-xs text-muted-foreground uppercase font-semibold mb-2">
               Allergies
@@ -146,7 +146,7 @@ export function ProfileView() {
 
           <motion.div
             variants={itemVariants}
-            className="bg-white rounded-2xl p-6 border border-border"
+            className="bg-card rounded-2xl p-6 border border-border"
           >
             <p className="text-xs text-muted-foreground uppercase font-semibold mb-2">
               Family Health History

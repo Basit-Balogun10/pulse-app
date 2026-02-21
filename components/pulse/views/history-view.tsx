@@ -76,7 +76,7 @@ export function HistoryView() {
                   setExpandedDate(isExpanded ? null : entry.date)
                 }
                 whileHover={{ scale: 1.02 }}
-                className="w-full bg-white rounded-2xl p-4 shadow-md border border-border text-left hover:shadow-lg transition-shadow"
+                className="w-full bg-card rounded-2xl p-4 shadow-md border border-border text-left hover:shadow-lg transition-shadow"
               >
                 <div className="flex items-center justify-between">
                   <div className="flex-1">
@@ -105,7 +105,7 @@ export function HistoryView() {
                     animate={{ opacity: 1, height: 'auto', marginTop: 12 }}
                     exit={{ opacity: 0, height: 0, marginTop: 0 }}
                     transition={{ duration: 0.3 }}
-                    className="bg-white rounded-2xl p-4 shadow-md border border-border"
+                    className="bg-card rounded-2xl p-4 shadow-md border border-border"
                   >
                     <div className="grid grid-cols-2 gap-4 mb-4">
                       <div>

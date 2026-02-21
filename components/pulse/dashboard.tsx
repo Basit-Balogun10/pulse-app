@@ -58,7 +58,7 @@ export function Dashboard() {
       </div>
 
       {/* Bottom Navigation */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-border shadow-lg">
+      <div className="fixed bottom-0 left-0 right-0 bg-card border-t border-border shadow-lg">
         <div className="flex justify-around">
           {navItems.map((item) => {
             const Icon = item.icon;

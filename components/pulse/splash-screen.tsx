@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Heart } from 'lucide-react';
 
 interface SplashScreenProps {
   onComplete: () => void;
@@ -17,7 +16,6 @@ export function SplashScreen({ onComplete, duration = 3000 }: SplashScreenProps)
       setIsVisible(false);
       onComplete();
     }, duration);
-
     return () => clearTimeout(timer);
   }, [duration, onComplete]);
 
@@ -28,110 +26,82 @@ export function SplashScreen({ onComplete, duration = 3000 }: SplashScreenProps)
       initial={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.5, delay: duration / 1000 - 0.5 }}
-      className="fixed inset-0 bg-primary flex flex-col items-center justify-center z-50 overflow-hidden"
+      className="fixed inset-0 z-50 flex flex-col items-center justify-center"
+      style={{ backgroundColor: '#0a0a0a' }}
     >
-      {/* Floating background elements */}
+      {/* Subtle glow behind logo */}
       <motion.div
-        animate={{ y: [0, -20, 0], x: [0, 10, 0] }}
-        transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
-        className="absolute top-10 right-10 w-24 h-24 bg-white/10 rounded-full blur-3xl"
-      />
-      <motion.div
-        animate={{ y: [0, 20, 0], x: [0, -10, 0] }}
-        transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut', delay: 1 }}
-        className="absolute bottom-20 left-10 w-32 h-32 bg-white/5 rounded-full blur-3xl"
+        animate={{ opacity: [0.3, 0.6, 0.3], scale: [1, 1.1, 1] }}
+        transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+        className="absolute w-48 h-48 rounded-full"
+        style={{
+          background: 'radial-gradient(circle, #84CC1640 0%, transparent 70%)',
+          filter: 'blur(24px)',
+        }}
       />
 
-      {/* Logo Animation with Pulse Effect */}
+      {/* Logo */}
       <motion.div
-        initial={{ scale: 0, opacity: 0 }}
+        initial={{ scale: 0.6, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
-        transition={{
-          type: 'spring',
-          stiffness: 100,
-          damping: 15,
-          delay: 0.2,
-        }}
-        className="mb-6 relative z-10"
+        transition={{ type: 'spring', stiffness: 120, damping: 14, delay: 0.1 }}
+        className="relative mb-8 z-10"
       >
-        <motion.div
-          animate={{ scale: [1, 1.1, 1] }}
-          transition={{
-            duration: 2,
-            repeat: Infinity,
-            delay: 0.8,
+        {/* Pill icon — diagonal two-tone like the day carousel */}
+        <div
+          className="w-24 h-14 rounded-full shadow-2xl"
+          style={{
+            background: 'linear-gradient(135deg, #84CC16 50%, #F97316 50%)',
           }}
-          className="absolute inset-0 bg-white/20 rounded-full blur-xl"
         />
-        <div className="bg-white rounded-full p-6 shadow-2xl relative">
-          <motion.div
-            animate={{ rotate: [0, 10, -10, 0] }}
-            transition={{ duration: 3, repeat: Infinity }}
-          >
-            <Heart className="w-16 h-16 text-primary" fill="currentColor" />
-          </motion.div>
-        </div>
+        {/* Pulse ring */}
+        <motion.div
+          animate={{ scale: [1, 1.5, 1], opacity: [0.6, 0, 0.6] }}
+          transition={{ duration: 2.5, repeat: Infinity, delay: 0.8 }}
+          className="absolute inset-0 rounded-full"
+          style={{ border: '2px solid #84CC16' }}
+        />
       </motion.div>
 
-      {/* App Name with Typing Effect */}
+      {/* App name */}
       <motion.h1
-        initial={{ opacity: 0, y: 10 }}
+        initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.5, duration: 0.6 }}
-        className="text-6xl font-bold text-white mb-2 tracking-tight relative z-10"
+        transition={{ delay: 0.4, duration: 0.6 }}
+        className="text-5xl font-bold mb-1 z-10"
+        style={{ color: '#ffffff', letterSpacing: '-0.02em' }}
       >
         Pulse
       </motion.h1>
 
-      {/* Animated underline */}
-      <motion.div
-        initial={{ width: 0 }}
-        animate={{ width: 120 }}
-        transition={{ delay: 0.8, duration: 0.8 }}
-        className="h-1 bg-white rounded-full mb-6"
-      />
-
-      {/* Subtitle */}
+      {/* Tagline */}
       <motion.p
-        initial={{ opacity: 0, y: 10 }}
+        initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.9, duration: 0.6 }}
-        className="text-lg text-white/90 text-center px-8 max-w-sm font-light relative z-10"
+        transition={{ delay: 0.7, duration: 0.6 }}
+        className="text-base z-10 font-light"
+        style={{ color: '#9ca3af' }}
       >
         Your quiet health companion
       </motion.p>
 
-      {/* Loading dots animation with improved styling */}
+      {/* Loading dots */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ delay: 1.2, duration: 0.4 }}
-        className="mt-16 flex gap-3 relative z-10"
+        transition={{ delay: 1.2 }}
+        className="absolute bottom-14 flex gap-2.5 z-10"
       >
         {[0, 1, 2].map((i) => (
           <motion.div
             key={i}
-            animate={{ y: [0, -12, 0], scale: [1, 1.2, 1] }}
-            transition={{
-              duration: 0.8,
-              repeat: Infinity,
-              delay: i * 0.15,
-            }}
-            className="w-3 h-3 bg-white rounded-full shadow-lg"
+            animate={{ y: [0, -10, 0], opacity: [0.4, 1, 0.4] }}
+            transition={{ duration: 0.9, repeat: Infinity, delay: i * 0.18 }}
+            className="w-2 h-2 rounded-full"
+            style={{ backgroundColor: '#84CC16' }}
           />
         ))}
       </motion.div>
-
-      {/* Progress indicator */}
-      <motion.div
-        initial={{ width: 0 }}
-        animate={{ width: '80%' }}
-        transition={{
-          duration: duration / 1000 - 0.5,
-          ease: 'linear',
-        }}
-        className="absolute bottom-8 left-0 h-1 bg-white/50 rounded-full"
-      />
     </motion.div>
   );
 }
