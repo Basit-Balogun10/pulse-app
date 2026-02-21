@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, Check, ChevronRight } from 'lucide-react';
 import { EnergyCard } from '@/components/pulse/checkin/energy-card';
@@ -12,6 +12,8 @@ import { MoodCard } from '@/components/pulse/checkin/mood-card';
 import { AppetiteCard } from '@/components/pulse/checkin/appetite-card';
 import { LifestyleCard } from '@/components/pulse/checkin/lifestyle-card';
 import { OpenFlagCard } from '@/components/pulse/checkin/open-flag-card';
+import { FeedbackLoopModal } from '@/components/pulse/feedback-loop-modal';
+import { useNudgeTracking } from '@/hooks/use-nudge-tracking';
 
 const CARDS = [
   { id: 'energy', component: EnergyCard },
@@ -33,6 +35,16 @@ export function CheckInView({ onComplete }: CheckInViewProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [direction, setDirection] = useState(1);
   const [checkInData, setCheckInData] = useState<Record<string, any>>({});
+  const [showFeedbackModal, setShowFeedbackModal] = useState(false);
+  
+  const { shouldShowNudge, incrementNudge, resetNudges, dismissNudge } = useNudgeTracking();
+
+  // Show feedback modal when check-in starts if there's an active nudge
+  useEffect(() => {
+    if (shouldShowNudge && currentIndex === 0) {
+      setShowFeedbackModal(true);
+    }
+  }, [shouldShowNudge, currentIndex]);
 
   const current = CARDS[currentIndex];
   const isCompleted = checkInData[current.id] !== undefined && checkInData[current.id] !== null;
@@ -137,6 +149,29 @@ export function CheckInView({ onComplete }: CheckInViewProps) {
           )}
         </motion.button>
       </div>
+
+      {/* Feedback Loop Modal */}
+      <FeedbackLoopModal
+        isOpen={showFeedbackModal}
+        onClose={() => setShowFeedbackModal(false)}
+        onYesBooked={() => {
+          console.log('User booked appointment');
+        }}
+        onYesWent={(reportFile) => {
+          console.log('User went to checkup', reportFile);
+          const today = new Date().toISOString().split('T')[0];
+          resetNudges(today);
+        }}
+        onNoDidntGo={() => {
+          console.log('User did not go');
+          const today = new Date().toISOString().split('T')[0];
+          incrementNudge(today);
+        }}
+        onRemindLater={() => {
+          console.log('User clicked remind later');
+          dismissNudge();
+        }}
+      />
     </div>
   );
 }

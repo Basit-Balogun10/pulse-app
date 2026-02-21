@@ -579,7 +579,7 @@ You've now demonstrated:
 - [x] Detailed AI analysis modal with structured JSON-like presentation, day citations, and reasoning
 - [ ] Analytics/Visualizations view with interactive graphs and charts (mood, sleep, energy trends with filtering)
 - [x] Nudge tracking system (count nudges, store in localStorage, display badge on analysis card)
-- [ ] Feedback loop modal (appears on next check-in after nudge)
+- [x] Feedback loop modal (appears on next check-in after nudge, tracks outcomes, uploads reports)
 - [ ] Doctor report upload flow (file upload + skip option)
 - [ ] Validation tracking (true positive / false positive outcomes)
 - [x] Auto-booking card (appears after 3+ nudges with 100% discount)
