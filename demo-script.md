@@ -489,7 +489,49 @@ This demo shows the complete preventive health journey for **Amara**, a 28-year-
 
 ---
 
-## Scene 13 — Final Summary
+## Scene 13 — Analytics & Visualizations View
+
+**User Story**: I want to visualize my health data over time with interactive graphs and charts. I need to see trends in my mood, sleep quality, energy levels, symptoms frequency, and other metrics. I also want filtering capabilities to view specific date ranges, metric types, or thresholds. This empowers me to understand my health patterns visually and make data-driven decisions about my wellbeing.
+
+**Screenplay**:
+
+1. Navigate to the Analytics/Visualizations view (new tab or section in Profile/Home).
+2. The screen displays:
+   - **Interactive Line Charts**:
+     - Sleep hours over time (with quality indicators)
+     - Energy levels trend (1-5 scale)
+     - Mood progression (Terrible → Excellent)
+   - **Bar Charts**:
+     - Symptoms frequency (which symptoms appeared on which days)
+     - Temperature readings (normal vs elevated)
+   - **Heatmap Calendar**:
+     - Visual representation of check-in streak
+     - Color-coded by overall health score or concern level
+   - **Filtering Panel**:
+     - Date range picker (Last 7 days, Last 30 days, Custom range)
+     - Metric selector (checkboxes for Energy, Sleep, Mood, Symptoms, etc.)
+     - Threshold filters (e.g., show only days with energy < 3)
+3. Tap/hover on data points to see detailed information from that specific day.
+4. Export or share visualization as image/PDF (future feature hint).
+
+**Visual/Behavior Notes**:
+
+- Clean, modern data visualization with smooth animations
+- Color-coded graphs matching Pulse brand colors (#84CC16 green for good, #F97316 orange for moderate, #EF4444 red for concerning)
+- Responsive touch interactions for mobile (pinch-to-zoom, swipe between charts)
+- Loading states while data is being processed
+- Empty state if insufficient data (e.g., "Need at least 7 days of check-ins to show trends")
+
+**Implementation Notes**:
+
+- Use a charting library like Recharts, Chart.js, or Victory Native
+- Data sources: amaraFullStory from amara-story-data.ts
+- Calculate aggregates and trends from check-in history
+- Responsive design for both mobile and tablet views
+
+---
+
+## Scene 14 — Final Summary
 
 You've now demonstrated:
 
@@ -508,6 +550,7 @@ You've now demonstrated:
 - Profile screen with editable health profile
 - Billing & subscription management screens
 - Discount tier progression tied to streaks
+- Analytics & visualizations view with interactive graphs, charts, and filtering
 
 ✅ **Clinic partner side:**
 - Clinic dashboard receiving bookings
@@ -526,23 +569,24 @@ You've now demonstrated:
 
 ### User Flow Components
 
-- [ ] Onboarding health profile screen (pre-fillable for demo)
-- [ ] Home screen (streak, day carousel with date jump, discount tier, CTA)
-- [ ] Daily check-in card stack (all 9 cards, swipeable)
-- [ ] Check-in completion screen (streak confirmation)
-- [ ] 14-day history view via day carousel with individual day entry views
-- [ ] AI analysis card on home screen (appears after check-in)
+- [x] Onboarding health profile screen (pre-fillable for demo)
+- [x] Home screen (streak, day carousel with date jump, discount tier, CTA)
+- [x] Daily check-in card stack (all 9 cards, swipeable)
+- [x] Check-in completion screen (streak confirmation)
+- [x] Home screen navigation: carousel allows selecting any day, home content updates to show that day's data
+- [x] AI analysis card on home screen (appears after check-in)
 - [ ] AI analysis overview/summary screen with two buttons (Book Clinic + See Detailed Analysis)
-- [ ] Detailed AI analysis modal with structured JSON-like presentation, day citations, and reasoning
+- [x] Detailed AI analysis modal with structured JSON-like presentation, day citations, and reasoning
+- [ ] Analytics/Visualizations view with interactive graphs and charts (mood, sleep, energy trends with filtering)
 - [ ] Nudge tracking system (count nudges, store in user data)
 - [ ] Feedback loop modal (appears on next check-in after nudge)
 - [ ] Doctor report upload flow (file upload + skip option)
 - [ ] Validation tracking (true positive / false positive outcomes)
-- [ ] Auto-booking card (appears after 3+ nudges with 100% discount)
-- [ ] Auto-booking modification flow (change clinic, date, time)
+- [x] Auto-booking card (appears after 3+ nudges with 100% discount)
+- [x] Auto-booking modification flow (change clinic, date, time)
 - [ ] Chat interface with AI assistant
 - [ ] Chat detection context tracking (extract relevant health info from messages)
-- [ ] Profile screen displaying health profile fields
+- [x] Profile screen displaying health profile fields
 - [ ] Editable health profile form (all fields updatable)
 - [ ] Billing & subscription view (current plan, discount tier, auto-booking eligibility)
 - [ ] Subscription management options (change plan, payment method, history)
@@ -556,9 +600,9 @@ You've now demonstrated:
 
 ### Clinics Tab Enhancements
 
-- [ ] Enhanced clinics view with search bar
-- [ ] Advanced filter sheet (distance slider, rating slider, specialty chips)
-- [ ] Sorting functionality (by distance, rating, discount)
+- [x] Enhanced clinics view with search bar
+- [x] Advanced filter sheet (distance slider, rating slider, specialty chips)
+- [x] Sorting functionality (by distance, rating, discount)
 - [ ] Context banner showing relevant specialties from AI analysis
 - [ ] Clinic detail screen with map, specialties, pricing, discount, booking button
 - [ ] Time slot selection for booking
@@ -567,17 +611,17 @@ You've now demonstrated:
 
 ### Mock Data Requirements
 
-- [ ] Amara's onboarding profile (age, gender, family history, conditions, medications, last checkup)
-- [ ] Amara's 14-day check-in entries with coherent health pattern:
+- [x] Amara's onboarding profile (age, gender, family history, conditions, medications, last checkup)
+- [x] Amara's 14-day check-in entries with coherent health pattern:
   - Days 1-3: Normal baseline (energy 4/5, good sleep, positive mood, no symptoms)
   - Days 4-7: Mild decline (energy 3/5, slight sleep reduction, neutral mood, occasional headaches)
   - Days 8-11: Concerning pattern starts (energy 2/5, poor sleep, low mood, abdomen discomfort Day 10)
   - Days 12-14: Pattern escalates (energy 2/5, very poor sleep, low mood, recurring abdomen ache, reduced appetite)
   - Day 15 (Today): Critical escalation (energy 2/5, 4.5hrs sleep, moderate abdomen ache, fever, very low appetite)
-- [ ] AI analysis results for each of the 14 past days (showing pattern tracking over time)
-- [ ] AI analysis for Day 15 (overview summary + detailed structured analysis with citations)
-- [ ] Mock nudge history data (3+ nudges tracked for auto-booking demo)
-- [ ] 12+ mock partner clinics with complete details:
+- [x] AI analysis results for each of the 14 past days (showing pattern tracking over time)
+- [x] AI analysis for Day 15 (overview summary + detailed structured analysis with citations)
+- [x] Mock nudge history data (3+ nudges tracked for auto-booking demo)
+- [x] 12+ mock partner clinics with complete details:
   - Name, address, geocoded coordinates
   - Specialties/areas they treat
   - Ratings and review counts
