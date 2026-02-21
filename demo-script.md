@@ -88,7 +88,7 @@ This demo shows the complete preventive health journey for **Amara**, a 28-year-
 
 **Show:** Analysis result screen (overview/summary view) with:
 
-**Streamed AI Analysis (summary):**
+**AI Analysis Overview (pre-generated when check-in completed):**
 > "Over the past 14 days, we've noticed a consistent and escalating pattern: sustained low energy (dropping from 4/5 to 2/5), progressively disrupted sleep (from 7-8hrs to 4.5hrs), reduced appetite, recurring moderate discomfort in your lower abdomen (appearing on days 10, 12, 14, and now 15 with increased intensity), social isolation, low mood, and now a slight fever.
 >
 > On its own, each of these is easy to brush off. Together, and given your family history of hypertension and diabetes, plus the fact that your last checkup was 14 months ago, this combination warrants medical attention.
@@ -319,7 +319,7 @@ This demo shows the complete preventive health journey for **Amara**, a 28-year-
 
 **User message 1:** "I just sneezed and there was blood in the tissue"
 
-**Show:** AI response (streaming):
+**Show:** AI chat response (streaming in real-time):
 > "That must be concerning. Let me help. First, how much blood did you notice — a few streaks, or more significant bleeding? And have you experienced any other symptoms today like congestion, dry air exposure, or nosebleeds before?"
 
 **User message 2:** "Just a few streaks, but it's the first time this has happened. I've had some congestion for the past 2 days"
@@ -641,7 +641,7 @@ You've now demonstrated:
 - [ ] AI analysis generation (overview summary + detailed structured JSON response)
 - [ ] Chat detection algorithm (extract relevant health info from user messages)
 - [ ] Context compilation for AI (health profile + check-ins + doctor reports + chat detections + weather + location)
-- [ ] Streaming text simulation for analysis modal
+- [x] Pre-generated AI analysis (overview and detailed) stored in mock data and displayed without streaming
 
 ### Location & Map Features
 

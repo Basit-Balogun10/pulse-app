@@ -7,9 +7,11 @@ import { userProfile, mockHealthData } from '@/lib/mock-data';
 import { amaraFullStory } from '@/lib/amara-story-data';
 import { DayCarousel } from '@/components/pulse/day-carousel';
 import { AnalysisModal, generateInsight } from '@/components/pulse/analysis-modal';
+import { DetailedAnalysisModal } from '@/components/pulse/detailed-analysis-modal';
 import { weatherSummary, getWeatherContext } from '@/lib/weather';
 import { useNudgeTracking } from '@/hooks/use-nudge-tracking';
 import { Badge } from '@/components/ui/badge';
+import { amaraDay15DetailedAnalysis } from '@/lib/amara-story-data';
 
 const TODAY = amaraFullStory[amaraFullStory.length - 1].date; // 2026-02-21 (Day 15)
 
@@ -32,8 +34,7 @@ export function HomeView({ onChatOpen, onStartCheckIn, todayEntry }: HomeViewPro
   const [missedDays] = useState<string[]>([]);
   const [subheading, setSubheading] = useState(SUBHEADINGS[0]);
   const [showAnalysisModal, setShowAnalysisModal] = useState(false);
-  const [analysisLoading, setAnalysisLoading] = useState(false);
-  const [analysisResult, setAnalysisResult] = useState<string | null>(null);
+  const [showDetailedModal, setShowDetailedModal] = useState(false);
   
   const { nudgeCount, shouldAutoBook, shouldShowNudge } = useNudgeTracking();
 
@@ -45,24 +46,14 @@ export function HomeView({ onChatOpen, onStartCheckIn, todayEntry }: HomeViewPro
     setSelectedDate(date);
   };
 
-  const handleOpenAnalysis = async () => {
-    if (!todayEntry) return;
-    
+  const handleOpenAnalysis = () => {
     setShowAnalysisModal(true);
-    setAnalysisLoading(true);
-    
-    const [weather] = await Promise.all([
-      getWeatherContext(),
-      new Promise((r) => setTimeout(r, 1500)),
-    ]);
-    
-    const insight = generateInsight(todayEntry, weatherSummary(weather));
-    setAnalysisResult(insight);
-    setAnalysisLoading(false);
   };
 
   const isToday = selectedDate === TODAY;
   const hasTodayEntry = isToday && todayEntry != null;
+  // Get pre-generated AI analysis overview from today's entry
+  const analysisOverview = todayEntry?.aiAnalysis?.overview || todayEntry?.aiAnalysis || null;
   const selectedEntry = mockHealthData.find((d) => d.date === selectedDate) ?? null;
 
   const item = (i: number) => ({
@@ -241,9 +232,23 @@ export function HomeView({ onChatOpen, onStartCheckIn, todayEntry }: HomeViewPro
       {/* AI Analysis Modal */}
       <AnalysisModal
         isOpen={showAnalysisModal}
-        isLoading={analysisLoading}
-        result={analysisResult}
+        overview={analysisOverview}
         onDismiss={() => setShowAnalysisModal(false)}
+        onBookClinic={() => {
+          setShowAnalysisModal(false);
+          // TODO: Navigate to clinics tab with context
+        }}
+        onSeeDetailed={() => {
+          setShowAnalysisModal(false);
+          setShowDetailedModal(true);
+        }}
+      />
+      
+      {/* Detailed Analysis Modal */}
+      <DetailedAnalysisModal
+        isOpen={showDetailedModal}
+        onClose={() => setShowDetailedModal(false)}
+        analysis={amaraDay15DetailedAnalysis}
       />
     </div>
   );

@@ -5,12 +5,13 @@ import { X, Activity } from 'lucide-react';
 
 interface AnalysisModalProps {
   isOpen: boolean;
-  isLoading: boolean;
-  result: string | null;
+  overview: string | null; // Pre-generated overview from AI
   onDismiss: () => void;
+  onBookClinic?: () => void;
+  onSeeDetailed?: () => void;
 }
 
-export function AnalysisModal({ isOpen, isLoading, result, onDismiss }: AnalysisModalProps) {
+export function AnalysisModal({ isOpen, overview, onDismiss, onBookClinic, onSeeDetailed }: AnalysisModalProps) {
   return (
     <AnimatePresence>
       {isOpen && (
@@ -28,20 +29,7 @@ export function AnalysisModal({ isOpen, isLoading, result, onDismiss }: Analysis
             transition={{ type: 'spring', damping: 30, stiffness: 300 }}
             className="fixed bottom-0 left-0 right-0 z-50 bg-card rounded-t-3xl border-t border-border p-6 max-h-[75vh] overflow-y-auto"
           >
-            {isLoading ? (
-              <div className="flex flex-col items-center py-8 gap-5">
-                <motion.div
-                  animate={{ rotate: 360 }}
-                  transition={{ duration: 1.5, repeat: Infinity, ease: 'linear' }}
-                  className="w-14 h-14 rounded-full border-4 border-[#84CC16] border-t-transparent"
-                />
-                <div className="text-center">
-                  <p className="text-lg font-bold text-foreground mb-1">Analysing your check-in…</p>
-                  <p className="text-sm text-muted-foreground">Reviewing your entries and patterns</p>
-                </div>
-              </div>
-            ) : (
-              <>
+            {
                 <div className="flex items-center justify-between mb-5">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-2xl bg-[#84CC16]/10 flex items-center justify-center">
@@ -62,18 +50,39 @@ export function AnalysisModal({ isOpen, isLoading, result, onDismiss }: Analysis
                 </div>
 
                 <div className="bg-muted rounded-2xl p-4 mb-5">
-                  <p className="text-foreground text-sm leading-relaxed">{result}</p>
+                  <p className="text-foreground text-sm leading-relaxed whitespace-pre-line">{overview}</p>
                 </div>
 
-                <motion.button
-                  whileTap={{ scale: 0.97 }}
-                  onClick={onDismiss}
-                  className="w-full py-3.5 rounded-2xl bg-[#84CC16] text-white font-semibold text-base hover:bg-[#84CC16]/90 transition-colors"
-                >
-                  Got it — back to home
-                </motion.button>
-              </>
-            )}
+                <div className="flex flex-col gap-3">
+                  {onBookClinic && (
+                    <motion.button
+                      whileTap={{ scale: 0.97 }}
+                      onClick={onBookClinic}
+                      className="w-full py-3.5 rounded-2xl bg-[#84CC16] text-white font-semibold text-base hover:bg-[#84CC16]/90 transition-colors"
+                    >
+                      Book Clinic Visit
+                    </motion.button>
+                  )}
+                  
+                  {onSeeDetailed && (
+                    <motion.button
+                      whileTap={{ scale: 0.97 }}
+                      onClick={onSeeDetailed}
+                      className="w-full py-3.5 rounded-2xl border-2 border-[#818CF8] text-[#818CF8] font-semibold text-base hover:bg-[#818CF8]/10 transition-colors"
+                    >
+                      See Detailed Analysis
+                    </motion.button>
+                  )}
+                  
+                  <motion.button
+                    whileTap={{ scale: 0.97 }}
+                    onClick={onDismiss}
+                    className="w-full py-3 rounded-2xl text-muted-foreground font-medium text-sm hover:bg-muted transition-colors"
+                  >
+                    Close
+                  </motion.button>
+                </div>
+              
           </motion.div>
         </>
       )}
