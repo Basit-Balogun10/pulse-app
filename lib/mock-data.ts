@@ -186,6 +186,9 @@ export const clinics = [
     distance: 2.3,
     discountCode: 'PULSE-AMR-2024',
     discount: '15%',
+    address: '45 Herbert Macaulay Way, Yaba, Lagos',
+    phone: '+234 803 456 7890',
+    hours: 'Mon-Fri: 8am-6pm, Sat: 9am-2pm',
   },
   {
     id: 2,
@@ -195,6 +198,9 @@ export const clinics = [
     distance: 3.1,
     discountCode: 'PULSE-AMR-2024',
     discount: '15%',
+    address: '12 Allen Avenue, Ikeja, Lagos',
+    phone: '+234 809 123 4567',
+    hours: 'Mon-Sat: 7am-8pm, Sun: 10am-4pm',
   },
 ];
 

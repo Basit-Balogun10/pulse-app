@@ -2,19 +2,22 @@
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MapPin, Star, Clock, CheckCircle, Copy, X, ChevronRight, Search, Filter, SlidersHorizontal } from 'lucide-react';
+import { MapPin, Star, Clock, CheckCircle, Copy, X, ChevronRight, Search, Filter, SlidersHorizontal, Sparkles, Map } from 'lucide-react';
 import { clinics } from '@/lib/mock-data';
+import { amaraFullStory } from '@/lib/mock-data-extended';
 import { Input } from '@/components/ui/input';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Slider } from '@/components/ui/slider';
 import { Button } from '@/components/ui/button';
+import { ClinicMap } from '../clinic-map';
 
 interface ClinicDetailsProps {
   clinic: (typeof clinics)[0];
   onClose: () => void;
+  onViewMap: () => void;
 }
 
-function ClinicDetails({ clinic, onClose }: ClinicDetailsProps) {
+function ClinicDetails({ clinic, onClose, onViewMap }: ClinicDetailsProps) {
   const [copied, setCopied] = useState(false);
 
   const handleCopyCode = () => {
@@ -96,6 +99,15 @@ function ClinicDetails({ clinic, onClose }: ClinicDetailsProps) {
         Book Appointment
       </motion.button>
 
+      <motion.button
+        whileTap={{ scale: 0.97 }}
+        onClick={onViewMap}
+        className="w-full py-3 px-6 bg-muted text-foreground rounded-2xl font-semibold text-sm hover:bg-muted/70 transition-colors flex items-center justify-center gap-2"
+      >
+        <Map className="w-4 h-4" />
+        View on Map
+      </motion.button>
+
       <div className="flex items-center gap-2 text-[#84CC16] justify-center pt-2 border-t border-border">
         <CheckCircle className="w-5 h-5" />
         <span className="text-sm font-semibold">Verified Partner Clinic</span>
@@ -112,6 +124,19 @@ export function ClinicsView() {
   const [selectedSpecialty, setSelectedSpecialty] = useState<string>('all');
   const [sortBy, setSortBy] = useState<'distance' | 'rating' | 'discount'>('distance');
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const [mapClinic, setMapClinic] = useState<(typeof clinics)[0] | null>(null);
+
+  // Get today's AI analysis for context banner
+  const todayEntry = amaraFullStory[amaraFullStory.length - 1];
+  const aiRecommendation = todayEntry?.aiAnalysis?.recommendation || '';
+  
+  // Extract specialty from AI recommendation if present
+  const hasRecommendation = aiRecommendation && (
+    aiRecommendation.toLowerCase().includes('gynecolog') ||
+    aiRecommendation.toLowerCase().includes('endocrinolog') ||
+    aiRecommendation.toLowerCase().includes('cardiolog') ||
+    aiRecommendation.toLowerCase().includes('dermatolog')
+  );
 
   // Get unique specialties
   const specialties = ['all', ...Array.from(new Set(clinics.map(c => c.specialty)))];
@@ -270,6 +295,29 @@ export function ClinicsView() {
             className="pl-10 rounded-2xl border-2 focus-visible:ring-[#84CC16]"
           />
         </div>
+
+        {/* AI Context Banner */}
+        {hasRecommendation && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-gradient-to-r from-[#A855F7]/10 to-[#84CC16]/10 border border-[#A855F7]/20 rounded-2xl p-4"
+          >
+            <div className="flex items-start gap-3">
+              <div className="w-8 h-8 rounded-xl bg-[#A855F7]/20 flex items-center justify-center shrink-0">
+                <Sparkles className="w-4 h-4 text-[#A855F7]" />
+              </div>
+              <div className="flex-1">
+                <p className="text-sm font-semibold text-foreground mb-1">
+                  AI Recommendation
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  {aiRecommendation.split('.')[0]}.
+                </p>
+              </div>
+            </div>
+          </motion.div>
+        )}
       </div>
 
       <div className="px-4 py-4 max-w-2xl mx-auto w-full">
@@ -279,6 +327,9 @@ export function ClinicsView() {
               key="detail"
               clinic={selectedClinic}
               onClose={() => setSelectedClinic(null)}
+              onViewMap={() => {
+                setMapClinic(selectedClinic);
+              }}
             />
           ) : (
             <motion.div
@@ -348,6 +399,19 @@ export function ClinicsView() {
           )}
         </AnimatePresence>
       </div>
+
+      {/* Map Modal */}
+      <AnimatePresence>
+        {mapClinic && (
+          <ClinicMap
+            name={mapClinic.name}
+            address={mapClinic.address}
+            phone={mapClinic.phone}
+            hours={mapClinic.hours}
+            onClose={() => setMapClinic(null)}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }

@@ -593,9 +593,9 @@ You've now demonstrated:
 
 ### Clinic Partner Components
 
-- [ ] Clinic partner onboarding (similar to user onboarding - collect clinic details)
-- [ ] Clinic dashboard with appointment notifications
-- [ ] Clinic profile management (specialties, pricing, location, hours)
+- [x] Clinic partner onboarding (similar to user onboarding - collect clinic details)
+- [x] Clinic dashboard with appointment notifications
+- [x] Clinic profile management (specialties, pricing, location, hours)
 - [ ] Embedded map or geocoded address display for clinic location
 - [ ] Appointment acceptance/rescheduling workflow
 
