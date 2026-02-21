@@ -11,7 +11,11 @@ import {
   Smile,
   Utensils,
   ChevronRight,
+  ArrowLeft,
   Check,
+  Droplets,
+  Dumbbell,
+  Brain,
 } from 'lucide-react';
 import { CheckInCard } from '@/components/pulse/check-in-card';
 
@@ -23,7 +27,9 @@ interface CheckInData {
   temperature: number;
   mood: number;
   appetite: number;
-  lifestyle: string;
+  hydration: number;
+  exercise: number;
+  stress: number;
 }
 
 const checkInItems = [
@@ -39,9 +45,9 @@ const checkInItems = [
     id: 'sleep',
     label: 'How well did you sleep?',
     icon: Moon,
-    type: 'scale',
-    min: 0,
-    max: 10,
+    type: 'scale-5',
+    min: 1,
+    max: 5,
   },
   {
     id: 'mood',
@@ -52,38 +58,56 @@ const checkInItems = [
     max: 10,
   },
   {
+    id: 'stress',
+    label: 'What\'s your stress level?',
+    icon: Brain,
+    type: 'scale-5',
+    min: 1,
+    max: 5,
+  },
+  {
     id: 'appetite',
     label: 'How\'s your appetite?',
     icon: Utensils,
-    type: 'scale',
-    min: 0,
-    max: 10,
+    type: 'scale-5',
+    min: 1,
+    max: 5,
+  },
+  {
+    id: 'symptoms',
+    label: 'Any physical symptoms?',
+    icon: Activity,
+    type: 'tags',
   },
   {
     id: 'respiratory',
     label: 'Respiratory comfort?',
     icon: Wind,
-    type: 'scale',
-    min: 0,
-    max: 100,
+    type: 'scale-5',
+    min: 1,
+    max: 5,
+  },
+  {
+    id: 'hydration',
+    label: 'How hydrated are you?',
+    icon: Droplets,
+    type: 'scale-5',
+    min: 1,
+    max: 5,
+  },
+  {
+    id: 'exercise',
+    label: 'How active today?',
+    icon: Dumbbell,
+    type: 'scale-5',
+    min: 1,
+    max: 5,
   },
   {
     id: 'temperature',
     label: 'Your temperature?',
     icon: Thermometer,
     type: 'number',
-  },
-  {
-    id: 'symptoms',
-    label: 'Any symptoms?',
-    icon: Activity,
-    type: 'tags',
-  },
-  {
-    id: 'lifestyle',
-    label: 'Activity level?',
-    icon: Activity,
-    type: 'select',
   },
 ];
 
@@ -103,12 +127,14 @@ export function CheckInView() {
     }
   };
 
-  const handleComplete = () => {
-    setCompleted(new Set(completed).add(current.id));
+  const handleBack = () => {
+    if (currentIndex > 0) {
+      setCurrentIndex(currentIndex - 1);
+    }
   };
 
-  const handleSkip = () => {
-    handleNext();
+  const handleComplete = () => {
+    setCompleted(new Set(completed).add(current.id));
   };
 
   const handleValue = (value: any) => {
@@ -153,7 +179,7 @@ export function CheckInView() {
               item={current}
               onValue={handleValue}
               onNext={handleNext}
-              onSkip={handleSkip}
+              onBack={handleBack}
               isCompleted={isCompleted}
             />
           </motion.div>
@@ -164,10 +190,12 @@ export function CheckInView() {
       <div className="px-6 py-6 bg-white border-t border-border flex gap-3">
         <motion.button
           whileTap={{ scale: 0.95 }}
-          onClick={handleSkip}
-          className="flex-1 py-3 px-4 rounded-2xl border-2 border-border text-foreground font-semibold hover:bg-muted transition-colors"
+          onClick={handleBack}
+          disabled={currentIndex === 0}
+          className="flex-1 py-3 px-4 rounded-2xl border-2 border-border text-foreground font-semibold hover:bg-muted transition-colors disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center gap-2"
         >
-          Skip
+          <ArrowLeft className="w-5 h-5" />
+          Back
         </motion.button>
         <motion.button
           whileTap={{ scale: 0.95 }}

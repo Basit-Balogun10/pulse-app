@@ -2,40 +2,43 @@
 
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Home, BarChart3, Zap, MapPin, Menu } from 'lucide-react';
+import { Home, BarChart3, Zap, MapPin, User } from 'lucide-react';
 import { HomeView } from './views/home-view';
 import { CheckInView } from './views/check-in-view';
 import { HistoryView } from './views/history-view';
 import { AnalysisView } from './views/analysis-view';
 import { ClinicsView } from './views/clinics-view';
+import { ProfileView } from './views/profile-view';
+import { ChatBox } from './chat-box';
 
-type ViewType = 'home' | 'checkin' | 'history' | 'analysis' | 'clinics';
+type ViewType = 'home' | 'checkin' | 'history' | 'analysis' | 'clinics' | 'profile';
 
 export function Dashboard() {
   const [activeView, setActiveView] = useState<ViewType>('home');
+  const [isChatOpen, setIsChatOpen] = useState(false);
 
   const navItems = [
     { id: 'home', label: 'Home', icon: Home },
     { id: 'checkin', label: 'Check-in', icon: Zap },
     { id: 'history', label: 'History', icon: BarChart3 },
-    { id: 'analysis', label: 'Analysis', icon: BarChart3 },
     { id: 'clinics', label: 'Clinics', icon: MapPin },
+    { id: 'profile', label: 'Profile', icon: User },
   ];
 
   const renderView = () => {
     switch (activeView) {
       case 'home':
-        return <HomeView />;
+        return <HomeView onChatOpen={() => setIsChatOpen(true)} />;
       case 'checkin':
         return <CheckInView />;
       case 'history':
         return <HistoryView />;
-      case 'analysis':
-        return <AnalysisView />;
       case 'clinics':
         return <ClinicsView />;
+      case 'profile':
+        return <ProfileView />;
       default:
-        return <HomeView />;
+        return <HomeView onChatOpen={() => setIsChatOpen(true)} />;
     }
   };
 
@@ -83,6 +86,9 @@ export function Dashboard() {
           })}
         </div>
       </div>
+
+      {/* Chat Box */}
+      <ChatBox isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} />
     </div>
   );
 }

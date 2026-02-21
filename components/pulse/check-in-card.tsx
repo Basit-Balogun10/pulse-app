@@ -2,36 +2,70 @@
 
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { LucideIcon } from 'lucide-react';
+import { LucideIcon, ArrowLeft } from 'lucide-react';
 
 interface CheckInCardProps {
   item: {
     id: string;
     label: string;
     icon: LucideIcon;
-    type: 'scale' | 'number' | 'tags' | 'select';
+    type: 'scale' | 'scale-5' | 'number' | 'tags' | 'select';
     min?: number;
     max?: number;
   };
   onValue: (value: any) => void;
   onNext: () => void;
-  onSkip: () => void;
+  onBack: () => void;
   isCompleted: boolean;
 }
 
+// Emoji scales with smart emoji/1-5 logic
 const emojiScales = {
-  energy: ['😴', '😑', '😐', '🙂', '😊', '😄', '😃', '😆', '🤩', '🔥'],
-  sleep: ['😴', '😴', '😐', '🙂', '😊', '😄', '😊', '😃', '🤩', '🔥'],
-  mood: ['😢', '😞', '😕', '😐', '🙂', '😊', '😄', '😆', '🤩', '🔥'],
-  appetite: ['🚫', '😒', '😐', '😑', '🙂', '😋', '😋', '😋', '😋', '😋'],
-  respiratory: ['😷', '😐', '😐', '🙂', '😊', '😊', '😊', '😊', '😊', '👍'],
+  energy: {
+    type: 'emoji', // Full emoji scale
+    emojis: ['😴', '😑', '😐', '🙂', '😊', '😄', '😃', '😆', '🤩', '🔥'],
+  },
+  sleep: {
+    type: 'scale-5', // 1-5 scale with emoji indicators
+    labels: ['Poor', 'Fair', 'Okay', 'Good', 'Great'],
+    emojis: ['😴', '😕', '😐', '🙂', '😄'],
+  },
+  mood: {
+    type: 'emoji', // Full emoji scale
+    emojis: ['😢', '😞', '😕', '😐', '🙂', '😊', '😄', '😆', '🤩', '🔥'],
+  },
+  appetite: {
+    type: 'scale-5', // 1-5 scale
+    labels: ['None', 'Low', 'Normal', 'High', 'Very High'],
+    emojis: ['🚫', '😒', '🍽️', '😋', '😋😋'],
+  },
+  respiratory: {
+    type: 'scale-5', // 1-5 scale
+    labels: ['Very Poor', 'Poor', 'Okay', 'Good', 'Excellent'],
+    emojis: ['😷', '😕', '😐', '🙂', '👍'],
+  },
+  hydration: {
+    type: 'scale-5', // New check-in
+    labels: ['Not at all', 'Minimal', 'Adequate', 'Good', 'Excellent'],
+    emojis: ['💧', '💧', '💧💧', '💧💧💧', '💧🌟'],
+  },
+  exercise: {
+    type: 'scale-5', // New check-in
+    labels: ['None', 'Light', 'Moderate', 'Intense', 'Very Intense'],
+    emojis: ['⛔', '🚶', '🏃', '💪', '🔥'],
+  },
+  stress: {
+    type: 'scale-5', // New check-in
+    labels: ['Very Low', 'Low', 'Moderate', 'High', 'Very High'],
+    emojis: ['😌', '🙂', '😐', '😟', '😰'],
+  },
 };
 
 export function CheckInCard({
   item,
   onValue,
   onNext,
-  onSkip,
+  onBack,
   isCompleted,
 }: CheckInCardProps) {
   const Icon = item.icon;
@@ -64,7 +98,14 @@ export function CheckInCard({
     onValue(val);
   };
 
-  const symptoms = ['Fatigue', 'Cough', 'Fever', 'Throat', 'Headache', 'None'];
+  const physicalSymptoms = [
+    'Headache',
+    'Sore Throat',
+    'Cough',
+    'Fatigue',
+    'Chest Pain',
+    'None',
+  ];
   const lifestyleOptions = [
     { label: 'Rest', value: 'rest' },
     { label: 'Light', value: 'light' },
@@ -89,49 +130,99 @@ export function CheckInCard({
         </h3>
       </div>
 
-      {/* Scale Input (Emoji-based) */}
-      {item.type === 'scale' && (
+      {/* Scale Input (Smart Emoji or 1-5) */}
+      {(item.type === 'scale' || item.type === 'scale-5') && (
         <div className="space-y-4">
-          {/* Emoji Scale Display */}
-          <div className="flex justify-between gap-1 mb-6">
-            {Array.from(
-              { length: item.max || 10 },
-              (_, i) => i
-            ).map((i) => {
-              const key = item.id as keyof typeof emojiScales;
-              const emoji = emojiScales[key]?.[i] || '◯';
-              const isSelected = value === i;
+          {/* Full Emoji Scale */}
+          {item.type === 'scale' && (
+            <>
+              <div className="flex justify-between gap-1 mb-6">
+                {Array.from(
+                  { length: item.max || 10 },
+                  (_, i) => i
+                ).map((i) => {
+                  const key = item.id as keyof typeof emojiScales;
+                  const scaleData = emojiScales[key];
+                  const emoji =
+                    scaleData && 'emojis' in scaleData
+                      ? scaleData.emojis[i]
+                      : '◯';
+                  const isSelected = value === i;
 
-              return (
-                <motion.button
-                  key={i}
-                  onClick={() => handleScaleSelect(i)}
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.95 }}
-                  className={`flex-1 aspect-square flex items-center justify-center rounded-2xl text-2xl transition-all ${
-                    isSelected
-                      ? 'bg-primary text-white scale-110 shadow-lg'
-                      : 'bg-muted hover:bg-muted/70'
-                  }`}
+                  return (
+                    <motion.button
+                      key={i}
+                      onClick={() => handleScaleSelect(i)}
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.95 }}
+                      className={`flex-1 aspect-square flex items-center justify-center rounded-2xl text-2xl transition-all ${
+                        isSelected
+                          ? 'bg-primary text-white scale-110 shadow-lg'
+                          : 'bg-muted hover:bg-muted/70'
+                      }`}
+                    >
+                      {emoji}
+                    </motion.button>
+                  );
+                })}
+              </div>
+              {value !== null && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="text-center"
                 >
-                  {emoji}
-                </motion.button>
-              );
-            })}
-          </div>
+                  <p className="text-4xl font-bold text-primary mb-2">
+                    {value}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    out of {item.max || 10}
+                  </p>
+                </motion.div>
+              )}
+            </>
+          )}
 
-          {/* Numeric Display */}
-          {value !== null && (
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="text-center"
-            >
-              <p className="text-4xl font-bold text-primary mb-2">{value}</p>
-              <p className="text-sm text-muted-foreground">
-                {item.max === 100 ? `${value}%` : `out of ${item.max || 10}`}
-              </p>
-            </motion.div>
+          {/* 1-5 Scale with Labels */}
+          {item.type === 'scale-5' && (
+            <>
+              <div className="space-y-3">
+                {Array.from({ length: 5 }, (_, i) => i + 1).map((i) => {
+                  const key = item.id as keyof typeof emojiScales;
+                  const scaleData = emojiScales[key];
+                  const label =
+                    scaleData && 'labels' in scaleData
+                      ? scaleData.labels[i - 1]
+                      : `Level ${i}`;
+                  const emoji =
+                    scaleData && 'emojis' in scaleData
+                      ? scaleData.emojis[i - 1]
+                      : '◯';
+                  const isSelected = value === i;
+
+                  return (
+                    <motion.button
+                      key={i}
+                      onClick={() => handleScaleSelect(i)}
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      className={`w-full py-4 px-6 rounded-2xl font-semibold text-lg flex items-center justify-between transition-all ${
+                        isSelected
+                          ? 'bg-primary text-white shadow-lg'
+                          : 'bg-muted text-foreground hover:bg-muted/70'
+                      }`}
+                    >
+                      <span>
+                        {emoji} {label}
+                      </span>
+                      {isSelected && (
+                        <span className="text-xl ml-2">✓</span>
+                      )}
+                    </motion.button>
+                  );
+                })}
+              </div>
+            </>
           )}
         </div>
       )}
@@ -169,11 +260,11 @@ export function CheckInCard({
         </div>
       )}
 
-      {/* Symptoms Tags */}
+      {/* Physical Symptoms Tags */}
       {item.type === 'tags' && (
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-2">
-            {symptoms.map((symptom) => {
+            {physicalSymptoms.map((symptom) => {
               const isSelected = Array.isArray(value) && value.includes(symptom);
 
               return (

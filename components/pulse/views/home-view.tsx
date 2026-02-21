@@ -1,16 +1,22 @@
 'use client';
 
+import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Heart, Flame, Star, TrendingUp } from 'lucide-react';
+import { Heart, Flame, Star, MessageCircle } from 'lucide-react';
 import { userProfile, mockHealthData } from '@/lib/mock-data';
+import { DayCarousel } from '@/components/pulse/day-carousel';
 
-export function HomeView() {
-  const latestEntry = mockHealthData[0];
+export function HomeView({ onChatOpen }: { onChatOpen?: () => void }) {
+  const [selectedDate, setSelectedDate] = useState('2025-02-23'); // Today
+  const [missedDays] = useState<string[]>([]); // No missed days for demo
+
+  const selectedEntry = mockHealthData.find((d) => d.date === selectedDate) || mockHealthData[0];
+
   const avgScore = Math.round(
-    (latestEntry.energy +
-      latestEntry.sleep +
-      latestEntry.mood +
-      latestEntry.appetite) /
+    (selectedEntry.energy +
+      selectedEntry.sleep +
+      selectedEntry.mood +
+      selectedEntry.appetite) /
       4
   );
 
@@ -41,22 +47,42 @@ export function HomeView() {
       animate="visible"
       className="px-4 py-6 max-w-2xl mx-auto"
     >
-      {/* Header */}
-      <motion.div variants={itemVariants} className="mb-8">
-        <h1 className="text-3xl font-bold text-foreground mb-2">
-          Hey {userProfile.name}
-        </h1>
-        <p className="text-muted-foreground">
-          You're on a {userProfile.streak}-day streak! Keep it going.
-        </p>
+      {/* Header with Chat Button */}
+      <motion.div variants={itemVariants} className="mb-6 flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-foreground mb-1">
+            Hey {userProfile.name}
+          </h1>
+          <p className="text-muted-foreground text-sm">
+            You're on a {userProfile.streak}-day streak! Keep it going.
+          </p>
+        </div>
+        {onChatOpen && (
+          <motion.button
+            whileTap={{ scale: 0.95 }}
+            onClick={onChatOpen}
+            className="flex items-center justify-center w-12 h-12 rounded-full bg-accent/10 hover:bg-accent/20 transition-colors"
+          >
+            <MessageCircle className="w-6 h-6 text-accent" />
+          </motion.button>
+        )}
+      </motion.div>
+
+      {/* Day Carousel */}
+      <motion.div variants={itemVariants} className="mb-6">
+        <DayCarousel 
+          onDaySelect={setSelectedDate} 
+          selectedDate={selectedDate} 
+          missedDays={missedDays}
+        />
       </motion.div>
 
       {/* Streak Card */}
       <motion.div
         variants={itemVariants}
-        className="bg-gradient-to-br from-[#F97316] to-[#EC4899] rounded-3xl p-6 text-white mb-6 shadow-lg"
+        className="bg-secondary rounded-3xl p-6 text-white mb-6 shadow-lg"
       >
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between">
           <div>
             <p className="text-white/80 text-sm mb-1">Current Streak</p>
             <div className="flex items-center gap-2">
@@ -119,18 +145,20 @@ export function HomeView() {
         </div>
       </motion.div>
 
-      {/* Today's Status */}
+      {/* Selected Date Status */}
       <motion.div
         variants={itemVariants}
-        className="bg-[#84CC16]/10 rounded-3xl p-6 border border-primary/20"
+        className="bg-primary/10 rounded-3xl p-6 border border-primary/20"
       >
-        <p className="text-muted-foreground text-sm mb-3">Today's Status</p>
+        <p className="text-muted-foreground text-sm mb-3">
+          {selectedDate === '2025-02-23' ? "Today's Status" : `Status - ${selectedDate}`}
+        </p>
         <div className="grid grid-cols-2 gap-4">
           <div className="bg-white rounded-2xl p-4">
             <p className="text-xs text-muted-foreground mb-1">Energy</p>
             <div className="flex items-center gap-2">
               <span className="text-2xl font-bold text-foreground">
-                {latestEntry.energy}
+                {selectedEntry.energy}
               </span>
               <span className="text-muted-foreground">/10</span>
             </div>
@@ -139,7 +167,7 @@ export function HomeView() {
             <p className="text-xs text-muted-foreground mb-1">Sleep</p>
             <div className="flex items-center gap-2">
               <span className="text-2xl font-bold text-foreground">
-                {latestEntry.sleep}
+                {selectedEntry.sleep}
               </span>
               <span className="text-muted-foreground">/10</span>
             </div>
@@ -148,7 +176,7 @@ export function HomeView() {
             <p className="text-xs text-muted-foreground mb-1">Mood</p>
             <div className="flex items-center gap-2">
               <span className="text-2xl font-bold text-foreground">
-                {latestEntry.mood}
+                {selectedEntry.mood}
               </span>
               <span className="text-muted-foreground">/10</span>
             </div>
@@ -157,9 +185,9 @@ export function HomeView() {
             <p className="text-xs text-muted-foreground mb-1">Appetite</p>
             <div className="flex items-center gap-2">
               <span className="text-2xl font-bold text-foreground">
-                {latestEntry.appetite}
+                {selectedEntry.appetite}
               </span>
-              <span className="text-muted-foreground">/10</span>
+              <span className="text-muted-foreground">/5</span>
             </div>
           </div>
         </div>
