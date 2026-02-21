@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { Calendar } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
+import { amaraFullStory } from '@/lib/amara-story-data';
 
 interface DayCarouselProps {
   onDaySelect: (date: string) => void;
@@ -12,24 +13,27 @@ interface DayCarouselProps {
   missedDays?: string[];
 }
 
-const TODAY_STR = '2025-02-23';
+// Use Day 15 (today) from Amara's story
+const TODAY_STR = amaraFullStory[amaraFullStory.length - 1].date; // 2026-02-21
 
 export function DayCarousel({ onDaySelect, selectedDate, missedDays = [] }: DayCarouselProps) {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [days, setDays] = useState<Array<{ date: string; label: string }>>([]);
 
   useEffect(() => {
+    // Show last 6 days from Amara's story
     const daysList = [];
-    const today = new Date(TODAY_STR);
-    // Show only 5-6 days at a time instead of 14
-    for (let i = 5; i >= 0; i--) {
-      const date = new Date(today);
-      date.setDate(date.getDate() - i);
-      const dateStr = date.toISOString().split('T')[0];
+    const totalDays = amaraFullStory.length;
+    const startIdx = Math.max(0, totalDays - 6); // Last 6 days
+    
+    for (let i = startIdx; i < totalDays; i++) {
+      const entry = amaraFullStory[i];
+      const date = new Date(entry.date);
       const day = date.getDate();
       const month = date.getMonth() + 1;
-      daysList.push({ date: dateStr, label: `${day}/${month}` });
+      daysList.push({ date: entry.date, label: `${day}/${month}` });
     }
+    
     setDays(daysList);
     setTimeout(() => {
       if (scrollContainerRef.current) {

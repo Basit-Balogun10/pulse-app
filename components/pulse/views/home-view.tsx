@@ -4,11 +4,13 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Flame, MessageCircle, Zap, Sparkles } from 'lucide-react';
 import { userProfile, mockHealthData } from '@/lib/mock-data';
+import { amaraFullStory } from '@/lib/amara-story-data';
 import { DayCarousel } from '@/components/pulse/day-carousel';
+import { DayEntryView } from '@/components/pulse/day-entry-view';
 import { AnalysisModal, generateInsight } from '@/components/pulse/analysis-modal';
 import { weatherSummary, getWeatherContext } from '@/lib/weather';
 
-const TODAY = '2025-02-23';
+const TODAY = amaraFullStory[amaraFullStory.length - 1].date; // 2026-02-21 (Day 15)
 
 const SUBHEADINGS = [
   'Consistency is your superpower.',
@@ -31,10 +33,22 @@ export function HomeView({ onChatOpen, onStartCheckIn, todayEntry }: HomeViewPro
   const [showAnalysisModal, setShowAnalysisModal] = useState(false);
   const [analysisLoading, setAnalysisLoading] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<string | null>(null);
+  const [showDayEntryView, setShowDayEntryView] = useState(false);
+  const [selectedDayEntry, setSelectedDayEntry] = useState<typeof amaraFullStory[0] | null>(null);
 
   useEffect(() => {
     setSubheading(SUBHEADINGS[Math.floor(Math.random() * SUBHEADINGS.length)]);
   }, []);
+
+  const handleDaySelect = (date: string) => {
+    setSelectedDate(date);
+    // Find entry in Amara's story
+    const entry = amaraFullStory.find(e => e.date === date);
+    if (entry && date !== TODAY) {
+      setSelectedDayEntry(entry);
+      setShowDayEntryView(true);
+    }
+  };
 
   const handleOpenAnalysis = async () => {
     if (!todayEntry) return;
@@ -95,7 +109,7 @@ export function HomeView({ onChatOpen, onStartCheckIn, todayEntry }: HomeViewPro
 
           {/* Day carousel — negative margin to stretch edge-to-edge */}
           <motion.div variants={item(0)} initial="hidden" animate="visible" className="-mx-4">
-            <DayCarousel onDaySelect={setSelectedDate} selectedDate={selectedDate} missedDays={missedDays} />
+            <DayCarousel onDaySelect={handleDaySelect} selectedDate={selectedDate} missedDays={missedDays} />
           </motion.div>
 
           {/* Streak card */}
@@ -220,6 +234,16 @@ export function HomeView({ onChatOpen, onStartCheckIn, todayEntry }: HomeViewPro
         isLoading={analysisLoading}
         result={analysisResult}
         onDismiss={() => setShowAnalysisModal(false)}
+      />
+
+      {/* Day Entry View Modal */}
+      <DayEntryView
+        isOpen={showDayEntryView}
+        onClose={() => {
+          setShowDayEntryView(false);
+          setSelectedDayEntry(null);
+        }}
+        entry={selectedDayEntry}
       />
     </div>
   );
