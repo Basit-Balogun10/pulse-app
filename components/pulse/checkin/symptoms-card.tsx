@@ -17,10 +17,14 @@ const LOCATIONS = [
   { id: 'back', label: 'Back', emoji: '🦴' },
   { id: 'arms_hands', label: 'Arms/Hands', emoji: '💪' },
   { id: 'legs_feet', label: 'Legs/Feet', emoji: '🦵' },
+  { id: 'throat_neck', label: 'Throat/Neck', emoji: '🗣️' },
+  { id: 'eyes', label: 'Eyes', emoji: '👁️' },
+  { id: 'ear', label: 'Ear', emoji: '👂' },
+  { id: 'skin', label: 'Skin', emoji: '🩹' },
   { id: 'other', label: 'Other', emoji: '📍' },
 ];
 
-const TYPES = ['Pain', 'Ache', 'Numbness', 'Tingling', 'Swelling', 'Rash'];
+const TYPES = ['Pain', 'Ache', 'Numbness', 'Tingling', 'Swelling', 'Rash', 'Burning', 'Stiffness', 'Itching', 'Pressure'];
 
 const INTENSITY = [
   { value: 'mild', label: 'Mild', color: '#FBBF24', bg: '#FBBF2415' },
@@ -34,43 +38,57 @@ export function SymptomsCard({ onValue, value }: Props) {
   const [type, setType] = useState<string | null>(value?.type ?? null);
   const [intensity, setIntensity] = useState<string | null>(value?.intensity ?? null);
 
-  const setNone = () => {
-    setNoSymptoms(true);
-    setLocation(null);
-    setType(null);
-    setIntensity(null);
-    onValue({ none: true });
+  const signal = (ns: boolean, loc: string | null, t: string | null, i: string | null) => {
+    if (ns) { onValue({ none: true }); return; }
+    if (loc && t && i) { onValue({ location: loc, type: t, intensity: i }); return; }
+    onValue(null); // incomplete — disables Next
+  };
+
+  const toggleNone = () => {
+    const next = !noSymptoms;
+    setNoSymptoms(next);
+    if (next) {
+      setLocation(null);
+      setType(null);
+      setIntensity(null);
+    }
+    signal(next, null, null, null);
   };
 
   const selectLocation = (loc: string) => {
+    const next = location === loc ? null : loc;
     setNoSymptoms(false);
-    setLocation(loc);
+    setLocation(next);
     setType(null);
     setIntensity(null);
+    signal(false, next, null, null);
   };
 
   const selectType = (t: string) => {
-    setType(t);
+    const next = type === t ? null : t;
+    setType(next);
     setIntensity(null);
+    signal(false, location, next, null);
   };
 
   const selectIntensity = (i: string) => {
-    setIntensity(i);
-    onValue({ location, type, intensity: i });
+    const next = intensity === i ? null : i;
+    setIntensity(next);
+    signal(false, location, type, next);
   };
 
   return (
-    <div className="rounded-3xl bg-card border border-border shadow-lg p-6 select-none">
+    <div className="rounded-3xl bg-card border border-border shadow-lg p-5 select-none">
       <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Body</p>
-      <h3 className="text-xl font-bold text-foreground mb-5">
+      <h3 className="text-xl font-bold text-foreground mb-4">
         Any physical discomfort today?
       </h3>
 
       {/* Stage 0 — None button */}
       <motion.button
-        onClick={setNone}
+        onClick={toggleNone}
         whileTap={{ scale: 0.97 }}
-        className={`w-full py-3.5 rounded-2xl border-2 font-semibold mb-4 transition-all ${
+        className={`w-full py-3 rounded-2xl border-2 font-semibold mb-4 transition-all text-sm ${
           noSymptoms
             ? 'border-[#84CC16] bg-[#84CC16]/10 text-[#84CC16]'
             : 'border-border text-foreground hover:bg-muted'
@@ -81,25 +99,22 @@ export function SymptomsCard({ onValue, value }: Props) {
 
       {/* Stage 1 — Location grid */}
       {!noSymptoms && (
-        <motion.div
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-        >
-          <p className="text-sm font-semibold text-foreground mb-2">Where?</p>
-          <div className="grid grid-cols-2 gap-2 mb-4">
+        <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}>
+          <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">Where?</p>
+          <div className="grid grid-cols-3 gap-1.5 mb-4">
             {LOCATIONS.map(({ id, label, emoji }) => (
               <motion.button
                 key={id}
                 onClick={() => selectLocation(id)}
                 whileTap={{ scale: 0.97 }}
-                className={`flex items-center gap-2 px-3 py-2.5 rounded-xl border-2 text-sm font-medium transition-all ${
+                className={`flex flex-col items-center py-2 px-1 rounded-xl border-2 text-xs font-medium transition-all ${
                   location === id
                     ? 'border-[#818CF8] bg-[#818CF8]/10 text-[#818CF8]'
                     : 'border-border bg-muted text-foreground hover:bg-muted/70'
                 }`}
               >
-                <span>{emoji}</span>
-                <span>{label}</span>
+                <span className="text-lg mb-0.5">{emoji}</span>
+                <span className="text-center leading-tight">{label}</span>
               </motion.button>
             ))}
           </div>
@@ -109,19 +124,15 @@ export function SymptomsCard({ onValue, value }: Props) {
       {/* Stage 2 — Symptom type */}
       <AnimatePresence>
         {!noSymptoms && location && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 10 }}
-          >
-            <p className="text-sm font-semibold text-foreground mb-2">Type?</p>
-            <div className="flex flex-wrap gap-2 mb-4">
+          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
+            <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">Type?</p>
+            <div className="flex flex-wrap gap-1.5 mb-4">
               {TYPES.map((t) => (
                 <motion.button
                   key={t}
                   onClick={() => selectType(t)}
                   whileTap={{ scale: 0.97 }}
-                  className={`px-4 py-2 rounded-xl border-2 text-sm font-semibold transition-all ${
+                  className={`px-3 py-1.5 rounded-xl border-2 text-xs font-semibold transition-all ${
                     type === t
                       ? 'border-[#818CF8] bg-[#818CF8]/10 text-[#818CF8]'
                       : 'border-border bg-muted text-foreground hover:bg-muted/70'
@@ -138,12 +149,8 @@ export function SymptomsCard({ onValue, value }: Props) {
       {/* Stage 3 — Intensity */}
       <AnimatePresence>
         {!noSymptoms && location && type && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 10 }}
-          >
-            <p className="text-sm font-semibold text-foreground mb-2">How severe?</p>
+          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
+            <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">How severe?</p>
             <div className="flex gap-2">
               {INTENSITY.map(({ value: v, label, color, bg }) => (
                 <motion.button

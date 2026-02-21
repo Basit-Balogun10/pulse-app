@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Send, X, MessageCircle } from 'lucide-react';
+import { Send, X, MessageCircle, Maximize2, Minimize2, Paperclip, Image as ImageIcon, Mic } from 'lucide-react';
 
 interface Message {
   id: string;
@@ -27,7 +27,11 @@ export function ChatBox({ isOpen, onClose }: ChatBoxProps) {
   ]);
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -92,6 +96,80 @@ export function ChatBox({ isOpen, onClose }: ChatBoxProps) {
     return 'That\'s a great question! Based on your health data, I\'d recommend focusing on consistent sleep schedules and staying hydrated. These two factors have the biggest impact on your overall wellness score. Is there anything specific you\'d like to explore?';
   };
 
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const userMessage: Message = {
+        id: Date.now().toString(),
+        type: 'user',
+        text: `📎 Attached: ${file.name}`,
+        timestamp: new Date(),
+      };
+      setMessages((prev) => [...prev, userMessage]);
+      
+      setTimeout(() => {
+        const aiMessage: Message = {
+          id: (Date.now() + 1).toString(),
+          type: 'ai',
+          text: 'I\'ve received your file. In a full implementation, I\'d analyze medical documents, lab results, or prescription images to provide personalized health insights.',
+          timestamp: new Date(),
+        };
+        setMessages((prev) => [...prev, aiMessage]);
+      }, 1000);
+    }
+  };
+
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const userMessage: Message = {
+        id: Date.now().toString(),
+        type: 'user',
+        text: `🖼️ Image attached: ${file.name}`,
+        timestamp: new Date(),
+      };
+      setMessages((prev) => [...prev, userMessage]);
+      
+      setTimeout(() => {
+        const aiMessage: Message = {
+          id: (Date.now() + 1).toString(),
+          type: 'ai',
+          text: 'Image received! I can help analyze medical photos, skin conditions, prescription bottles, or health-related images to provide insights.',
+          timestamp: new Date(),
+        };
+        setMessages((prev) => [...prev, aiMessage]);
+      }, 1000);
+    }
+  };
+
+  const handleVoiceInput = () => {
+    if (isRecording) {
+      setIsRecording(false);
+      // Simulate voice input completion
+      const userMessage: Message = {
+        id: Date.now().toString(),
+        type: 'user',
+        text: '🎤 Voice message: "How can I improve my sleep quality?"',
+        timestamp: new Date(),
+      };
+      setMessages((prev) => [...prev, userMessage]);
+      setIsLoading(true);
+      
+      setTimeout(() => {
+        const aiMessage: Message = {
+          id: (Date.now() + 1).toString(),
+          type: 'ai',
+          text: generateAIResponse('sleep'),
+          timestamp: new Date(),
+        };
+        setMessages((prev) => [...prev, aiMessage]);
+        setIsLoading(false);
+      }, 1000);
+    } else {
+      setIsRecording(true);
+    }
+  };
+
   return (
     <AnimatePresence>
       {isOpen && (
@@ -108,29 +186,47 @@ export function ChatBox({ isOpen, onClose }: ChatBoxProps) {
           {/* Chat Modal */}
           <motion.div
             initial={{ y: 600, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
+            animate={{ 
+              y: 0, 
+              opacity: 1,
+              height: isFullscreen ? '100vh' : '70vh',
+              borderRadius: isFullscreen ? '0px' : '24px 24px 0 0'
+            }}
             exit={{ y: 600, opacity: 0 }}
             transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-            className="fixed bottom-0 left-0 right-0 bg-card rounded-t-3xl shadow-2xl z-50 h-[70vh] flex flex-col border-t border-border"
+            className={`fixed ${isFullscreen ? 'inset-0' : 'bottom-0 left-0 right-0'} bg-card shadow-2xl z-50 flex flex-col border-t border-border`}
           >
             {/* Header */}
             <div className="flex items-center justify-between p-6 border-b border-border">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
-                  <MessageCircle className="w-6 h-6 text-primary" />
+                <div className="w-10 h-10 bg-[#84CC16]/10 rounded-full flex items-center justify-center">
+                  <MessageCircle className="w-6 h-6 text-[#84CC16]" />
                 </div>
                 <div>
                   <h3 className="font-bold text-foreground">Pulse AI</h3>
                   <p className="text-xs text-muted-foreground">Your health companion</p>
                 </div>
               </div>
-              <motion.button
-                whileTap={{ scale: 0.95 }}
-                onClick={onClose}
-                className="p-2 hover:bg-muted rounded-full"
-              >
-                <X className="w-6 h-6 text-foreground" />
-              </motion.button>
+              <div className="flex items-center gap-2">
+                <motion.button
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => setIsFullscreen(!isFullscreen)}
+                  className="p-2 hover:bg-muted rounded-full transition-colors"
+                >
+                  {isFullscreen ? (
+                    <Minimize2 className="w-5 h-5 text-foreground" />
+                  ) : (
+                    <Maximize2 className="w-5 h-5 text-foreground" />
+                  )}
+                </motion.button>
+                <motion.button
+                  whileTap={{ scale: 0.95 }}
+                  onClick={onClose}
+                  className="p-2 hover:bg-muted rounded-full transition-colors"
+                >
+                  <X className="w-6 h-6 text-foreground" />
+                </motion.button>
+              </div>
             </div>
 
             {/* Messages Container */}
@@ -147,7 +243,7 @@ export function ChatBox({ isOpen, onClose }: ChatBoxProps) {
                   <div
                     className={`max-w-xs lg:max-w-md px-4 py-3 rounded-2xl ${
                       message.type === 'user'
-                        ? 'bg-primary text-white rounded-br-none'
+                        ? 'bg-[#84CC16] text-white rounded-br-none'
                         : 'bg-muted text-foreground rounded-bl-none'
                     }`}
                   >
@@ -197,26 +293,74 @@ export function ChatBox({ isOpen, onClose }: ChatBoxProps) {
             </div>
 
             {/* Input Area */}
-            <form
-              onSubmit={handleSendMessage}
-              className="p-6 border-t border-border flex gap-3"
-            >
+            <div className="p-6 pt-4 border-t border-border">
+              {/* Media Buttons Row */}
+              <div className="flex items-center gap-2 mb-3">
+                <motion.button
+                  whileTap={{ scale: 0.97 }}
+                  onClick={() => fileInputRef.current?.click()}
+                  className="flex items-center gap-2 px-3 py-2 rounded-xl bg-muted hover:bg-muted/70 transition-colors text-foreground text-sm font-medium"
+                >
+                  <Paperclip className="w-4 h-4" />
+                  <span>File</span>
+                </motion.button>
+                <motion.button
+                  whileTap={{ scale: 0.97 }}
+                  onClick={() => imageInputRef.current?.click()}
+                  className="flex items-center gap-2 px-3 py-2 rounded-xl bg-muted hover:bg-muted/70 transition-colors text-foreground text-sm font-medium"
+                >
+                  <ImageIcon className="w-4 h-4" />
+                  <span>Image</span>
+                </motion.button>
+                <motion.button
+                  whileTap={{ scale: 0.97 }}
+                  onClick={handleVoiceInput}
+                  className={`flex items-center gap-2 px-3 py-2 rounded-xl transition-colors text-sm font-medium ${
+                    isRecording 
+                      ? 'bg-red-500 text-white' 
+                      : 'bg-muted hover:bg-muted/70 text-foreground'
+                  }`}
+                >
+                  <Mic className="w-4 h-4" />
+                  <span>{isRecording ? 'Recording...' : 'Voice'}</span>
+                </motion.button>
+              </div>
+
+              {/* Text Input + Send */}
+              <form onSubmit={handleSendMessage} className="flex gap-3">
+                <input
+                  type="text"
+                  value={inputValue}
+                  onChange={(e) => setInputValue(e.target.value)}
+                  placeholder="Ask me anything..."
+                  className="flex-1 px-4 py-3 rounded-2xl bg-muted border-2 border-transparent focus:border-[#84CC16] focus:outline-none text-foreground"
+                />
+                <motion.button
+                  whileTap={{ scale: 0.97 }}
+                  type="submit"
+                  disabled={!inputValue.trim() || isLoading}
+                  className="bg-[#84CC16] text-white p-3 rounded-2xl hover:bg-[#84CC16]/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                >
+                  <Send className="w-5 h-5" />
+                </motion.button>
+              </form>
+
+              {/* Hidden file inputs */}
               <input
-                type="text"
-                value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
-                placeholder="Ask me anything..."
-                className="flex-1 px-4 py-3 rounded-2xl bg-muted border-2 border-transparent focus:border-primary focus:outline-none text-foreground"
+                ref={fileInputRef}
+                type="file"
+                accept=".pdf,.doc,.docx,.txt"
+                onChange={handleFileSelect}
+                className="hidden"
               />
-              <motion.button
-                whileTap={{ scale: 0.95 }}
-                type="submit"
-                disabled={!inputValue.trim() || isLoading}
-                className="bg-primary text-white p-3 rounded-2xl hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
-              >
-                <Send className="w-5 h-5" />
-              </motion.button>
-            </form>
+              <input
+                ref={imageInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleImageSelect}
+                className="hidden"
+              />
+            </div>
           </motion.div>
         </>
       )}
