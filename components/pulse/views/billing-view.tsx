@@ -1,8 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { motion } from 'framer-motion';
-import { ArrowLeft, Check, Star, Zap, Shield, Gift } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { ArrowLeft, Check, Star, Zap, Shield, Gift, CreditCard, Calendar, X, ExternalLink } from 'lucide-react';
 import { userProfile } from '@/lib/mock-data';
 
 interface BillingViewProps {
@@ -26,8 +26,17 @@ function getTierIndex(streak: number): number {
 
 export function BillingView({ onBack }: BillingViewProps) {
   const [selectedPlan, setSelectedPlan] = useState<'monthly' | 'annual'>('annual');
+  const [showManageModal, setShowManageModal] = useState(false);
+  const [showPaymentMethodModal, setShowPaymentMethodModal] = useState(false);
+  const [showBillingHistory, setShowBillingHistory] = useState(false);
   const currentTierIndex = getTierIndex(userProfile.streak);
   const currentTier = TIERS[currentTierIndex];
+
+  // Mock billing history
+  const billingHistory = [
+    { date: '2025-02-01', amount: 14400, plan: 'Annual', status: 'Paid', method: 'Visa •••• 4242' },
+    { date: '2024-02-01', amount: 14400, plan: 'Annual', status: 'Paid', method: 'Visa •••• 4242' },
+  ];
 
   return (
     <div className="flex flex-col h-full">
@@ -144,6 +153,7 @@ export function BillingView({ onBack }: BillingViewProps) {
 
         <motion.button
           whileTap={{ scale: 0.97 }}
+          onClick={() => setShowManageModal(true)}
           className="w-full py-4 rounded-2xl bg-[#84CC16] text-white font-bold text-base hover:bg-[#84CC16]/90 transition-colors"
         >
           Manage Subscription
@@ -153,6 +163,214 @@ export function BillingView({ onBack }: BillingViewProps) {
           Cancel anytime. No commitments.
         </p>
       </div>
+
+      {/* Manage Subscription Modal */}
+      <AnimatePresence>
+        {showManageModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4"
+            onClick={() => setShowManageModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-background rounded-3xl overflow-hidden w-full max-w-md"
+            >
+              <div className="px-6 py-4 border-b border-border flex items-center justify-between">
+                <h3 className="text-lg font-bold text-foreground">Manage Subscription</h3>
+                <motion.button
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => setShowManageModal(false)}
+                  className="w-9 h-9 rounded-full bg-muted flex items-center justify-center"
+                >
+                  <X className="w-5 h-5 text-foreground" />
+                </motion.button>
+              </div>
+              <div className="p-6 space-y-3">
+                <ManageButton
+                  icon={<CreditCard className="w-5 h-5" />}
+                  label="Change Payment Method"
+                  description="Update your card details"
+                  onClick={() => {
+                    setShowManageModal(false);
+                    setShowPaymentMethodModal(true);
+                  }}
+                />
+                <ManageButton
+                  icon={<Calendar className="w-5 h-5" />}
+                  label="Billing History"
+                  description="View past payments"
+                  onClick={() => {
+                    setShowManageModal(false);
+                    setShowBillingHistory(true);
+                  }}
+                />
+                <ManageButton
+                  icon={<Star className="w-5 h-5" />}
+                  label="Change Plan"
+                  description={`Currently on ${selectedPlan} plan`}
+                  onClick={() => {
+                    setShowManageModal(false);
+                    // Scroll to plan selection
+                  }}
+                />
+                <ManageButton
+                  icon={<ExternalLink className="w-5 h-5" />}
+                  label="Cancel Subscription"
+                  description="We'll be sad to see you go"
+                  onClick={() => {
+                    alert('Cancellation flow would be here');
+                  }}
+                  danger
+                />
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Payment Method Modal */}
+      <AnimatePresence>
+        {showPaymentMethodModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4"
+            onClick={() => setShowPaymentMethodModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-background rounded-3xl overflow-hidden w-full max-w-md"
+            >
+              <div className="px-6 py-4 border-b border-border flex items-center justify-between">
+                <h3 className="text-lg font-bold text-foreground">Payment Methods</h3>
+                <motion.button
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => setShowPaymentMethodModal(false)}
+                  className="w-9 h-9 rounded-full bg-muted flex items-center justify-center"
+                >
+                  <X className="w-5 h-5 text-foreground" />
+                </motion.button>
+              </div>
+              <div className="p-6 space-y-3">
+                <div className="bg-card border-2 border-[#84CC16] rounded-2xl p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-xl bg-[#84CC16]/10 flex items-center justify-center">
+                      <CreditCard className="w-6 h-6 text-[#84CC16]" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm font-bold text-foreground">Visa ending in 4242</p>
+                      <p className="text-xs text-muted-foreground">Expires 12/26</p>
+                    </div>
+                    <div className="px-3 py-1 rounded-full bg-[#84CC16]/10 text-[#84CC16] text-xs font-semibold">
+                      Default
+                    </div>
+                  </div>
+                </div>
+                <motion.button
+                  whileTap={{ scale: 0.97 }}
+                  className="w-full py-3 rounded-2xl border-2 border-dashed border-border text-muted-foreground font-semibold text-sm hover:border-[#84CC16] hover:text-[#84CC16] transition-colors"
+                >
+                  + Add New Payment Method
+                </motion.button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Billing History Modal */}
+      <AnimatePresence>
+        {showBillingHistory && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4"
+            onClick={() => setShowBillingHistory(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-background rounded-3xl overflow-hidden w-full max-w-md max-h-[80vh]"
+            >
+              <div className="px-6 py-4 border-b border-border flex items-center justify-between">
+                <h3 className="text-lg font-bold text-foreground">Billing History</h3>
+                <motion.button
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => setShowBillingHistory(false)}
+                  className="w-9 h-9 rounded-full bg-muted flex items-center justify-center"
+                >
+                  <X className="w-5 h-5 text-foreground" />
+                </motion.button>
+              </div>
+              <div className="p-6 space-y-3 overflow-y-auto">
+                {billingHistory.map((item, i) => (
+                  <div key={i} className="bg-card border border-border rounded-2xl p-4">
+                    <div className="flex items-start justify-between mb-2">
+                      <div>
+                        <p className="text-sm font-bold text-foreground">{item.plan} Subscription</p>
+                        <p className="text-xs text-muted-foreground">{item.date}</p>
+                      </div>
+                      <div className="px-3 py-1 rounded-full bg-[#84CC16]/10 text-[#84CC16] text-xs font-semibold">
+                        {item.status}
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between pt-2 border-t border-border">
+                      <span className="text-xs text-muted-foreground">{item.method}</span>
+                      <span className="text-sm font-bold text-foreground">₦{item.amount.toLocaleString()}</span>
+                    </div>
+                  </div>
+                ))}
+                <p className="text-center text-xs text-muted-foreground pt-2">
+                  All payments secured by Paystack
+                </p>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
+  );
+}
+
+function ManageButton({
+  icon,
+  label,
+  description,
+  onClick,
+  danger = false,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  description: string;
+  onClick: () => void;
+  danger?: boolean;
+}) {
+  return (
+    <motion.button
+      whileTap={{ scale: 0.97 }}
+      onClick={onClick}
+      className="w-full flex items-center gap-4 p-4 rounded-2xl border-2 border-border hover:border-[#84CC16]/40 bg-card hover:shadow-md transition-all text-left"
+    >
+      <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${danger ? 'bg-[#EF4444]/10 text-[#EF4444]' : 'bg-[#84CC16]/10 text-[#84CC16]'}`}>
+        {icon}
+      </div>
+      <div className="flex-1">
+        <p className={`text-sm font-bold ${danger ? 'text-[#EF4444]' : 'text-foreground'}`}>{label}</p>
+        <p className="text-xs text-muted-foreground">{description}</p>
+      </div>
+    </motion.button>
   );
 }
