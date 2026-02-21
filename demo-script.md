@@ -42,12 +42,12 @@ The demo tells one complete user story: **Amara**, a 28-year-old woman in Lagos.
 
 **Show:** Home screen with:
 - Streak: 🔥 14 days
-- Health Consistency Score: 72
-- Discount tier: Regular (20% off)
+- Day carousel showing last 5-6 days with date jump calendar icon
+- Discount tier: Regular (20% off) — 2 weeks streak
 - CTA: "Complete today's check-in"
 
 **Say:**
-> "Amara has been logging for 14 days straight. Her streak is building, her discount tier is growing — she's almost at 20% off her next checkup. Let's see what her check-in looks like."
+> "Amara has been logging for 14 days straight. Her streak is building, her discount tier is growing — she's at 20% off her next checkup. Notice the day carousel — she can tap any day to see past entries, or use the calendar to jump to a specific date. Let's see what her check-in looks like."
 
 **Tap:** "Complete today's check-in"
 
@@ -55,25 +55,25 @@ The demo tells one complete user story: **Amara**, a 28-year-old woman in Lagos.
 
 ## Scene 4 — Daily Check-in Cards (Live Swipe) [~60 seconds]
 
-Swipe through all 8 cards briskly. Don't linger — show the speed and feel.
+Swipe through all 9 cards briskly. Don't linger — show the speed and feel.
 
 | Card | Amara's Input Today |
 |---|---|
 | Energy Level | 2 / 5 |
 | Sleep | 6 hrs / Poor |
-| Physical Symptoms | Lower abdomen / Ache / Mild |
+| Physical Symptoms | Lower abdomen / Ache / Mild (scrollable severity options) |
 | Respiratory | None |
 | Temperature | No fever |
 | Mood | Low |
-| Appetite & Digestion | Appetite: Low, Digestion: Mild bloating, Bowel: No change |
-| Lifestyle | Water: No, Exercise: No, Meds: N/A |
-| Open Flag | "Just feeling a bit off again" |
+| Appetite | Low |
+| Lifestyle | Water: No, Exercise: No, Meditation: No, Screen Time: Too much, Social: Isolated, Custom: "Skipped lunch again" |
+| Open Flag | Tap preset "Feeling a bit off today" (horizontally scrolling options) |
 
 **Say (while swiping):**
-> "Eight cards. Under 60 seconds. No forms, no typing — just taps. Each answer is a clean data point. Energy, sleep, symptoms, mood, appetite. One interaction per card."
+> "Nine cards. Under 60 seconds. No forms, no typing — just taps. Each answer is a clean data point. Energy, sleep, symptoms, mood, appetite. Notice the horizontal scrolling preset buttons and custom input fields — fast but flexible. One interaction per card."
 
 **After last card — completion screen shows:**
-> "✓ Entry logged. 14-day streak maintained. +10 health points earned."
+> "✓ Entry logged. 14-day streak maintained."
 
 ---
 
@@ -91,35 +91,95 @@ Swipe through all 8 cards briskly. Don't linger — show the speed and feel.
 
 ---
 
-## Scene 6 — The AI Moment 🔑 [~60 seconds]
+## Scene 6 — The AI Analysis Card 🔑 [~60 seconds]
 
-**Show:** "Pulse is analysing your recent entries..." — loading state with subtle animation.
+**Show:** After check-in completion, home screen reloads with new AI Analysis card
+- Beautiful gradient card (indigo/purple) with Sparkles icon
+- "AI Analysis Available — Tap to view today's insights"
+- Card pulses subtly to draw attention
+
+**Say:**
+> "Notice what just appeared. The AI has analyzed Amara's check-in. Let's see what it found."
+
+**Tap:** AI Analysis card
+
+**Show:** Full-screen modal with loading state: "Analyzing your recent entries..."
 
 **Use Gemini API streaming** — the alert text streams in word by word, live, in real time. This is the moment that lands with judges.
 
-**Streamed alert text:**
-> "Over the past 14 days, we've noticed a consistent pattern in your entries: sustained low energy, disrupted sleep, reduced appetite, recurring mild discomfort in your lower abdomen, and low mood — appearing together across multiple days.
+**Streamed analysis text:**
+> "Over the past 14 days, we've noticed a consistent pattern in your entries: sustained low energy, disrupted sleep, reduced appetite, recurring mild discomfort in your lower abdomen, social isolation, and low mood — appearing together across multiple days.
 >
 > On its own, each of these is easy to brush off. Together, and given your family history of hypertension and diabetes, this combination is worth paying attention to.
 >
 > This isn't a diagnosis — but it's a signal worth checking. We'd recommend a basic checkup soon."
+Enhanced Clinic Search & Booking [~45 seconds]
 
-**Below the alert:**
-- Tier badge: 🟡 Regular — 20% off ready to use
-- CTA button: **"Book a checkup at a partner clinic →"**
+**Navigate:** Tap "Clinics" tab from bottom navigation
+
+**Show:** Enhanced clinics view with:
+- Search bar: "Search clinics or specialties..."
+- Filter icon (sliders) in top right
+- "12 clinics available" count
+- Sorted list of partner clinics
 
 **Say:**
-> "No single entry triggered this. It was the pattern across 14 days — cross-referenced against her family history — that the AI connected. Amara didn't notice it. Pulse did."
+> "Pulse partners with clinics across the city. Users can search by name or specialty, filter by distance, rating, or discount percentage, and sort results. Let's find Amara a clinic nearby."
 
----
+**Tap:** Filter icon → **Show:** Advanced filter sheet
+- Sort by: Distance / Rating / Discount
+- Max distance slider (set to 5km)
+- Min rating slider (set to 4.5 stars)
+- Specialty filter buttons
 
-## Scene 7 — Clinic Booking & Discount Redemption [~30 seconds]
+**Say:**
+> "She wants high-rated clinics within 5km. Let's apply that."
 
-**Tap:** "Book a checkup at a partner clinic"
+**Tap:** "Apply" → **Show:** Filtered results (2 clinics):
+- **City Wellness Clinic** — 2.3km away — ⭐ 4.8 — 20% off badge
+- **MedPlus Health Centre** — 4.1km away — ⭐ 4.6 — 20% off badge
 
-**Show:** Partner clinic listing — 2 clinics displayed:
-- **City Wellness Clinic** — 2.3km away — ⭐ 4.8
-- **MedPlus Health Centre** — 4.1km away — ⭐ 4.6
+**Tap:** City Wellness Clinic → booking detail screen with:
+- Clinic detaAuto-Booking Agent (NEW) [~30 seconds]
+
+*Show this for advanced demo or if time permits*
+
+**Scenario:** Amara dismisses the checkup nudge 3 times over the next week. On the 4th nudge:
+
+**Show:** Auto-booking card appears on home screen
+- Calendar icon with "Auto-Booked Visit" header
+- Clinic: City Wellness Clinic
+- Date: 3 days from now
+- Time: 10:00 AM
+- Status: Pending
+- Info: "After 3 health nudges, we've auto-booked this appointment. Your 100% discount covers this visit."
+- Buttons: Cancel / Modify / Confirm
+
+**Say:**
+> "Here's where it gets interesting. Amara keeps dismissing the nudge. She's busy, she'll do it later. But Pulse knows procrastination is the real enemy. After 3 dismissed nudges, the agent auto-books an appointment for her — 3 days out. She has full control to modify the date, time, clinic, or cancel entirely. But the friction is removed. The appointment is there. All she has to do is show up."
+
+**Tx] Onboarding health profile screen (pre-fillable for demo)
+- [x] Home screen (streak, day carousel with date jump, discount tier, CTA)
+- [x] Daily check-in card stack (all 9 cards, swipeable)
+- [x] Check-in completion screen (streak confirmation)
+- [x] 14-day history view via day carousel (Amara's mock data)
+- [x] AI analysis card on home screen (appears after check-in)
+- [x] AI analysis modal (streaming text via Gemini)
+- [x] Enhanced clinics view (search bar, advanced filters)
+- [x] Partner clinic listing screen (filtered/sorted results)
+- [x] Clinic detail / booking screen (discount code display)
+- [x] Auto-booking card (appears after 3+ nudges)
+- [x] Amara's onboarding profile (in mock-data.ts)
+- [x] Amara's 14-day entry log (mock JSON dataset)
+- [x] AI prompt + system context (using Amara's profile + log)
+- [x] Multiple mock partner clinics with details (12+)
+- [x] Mock nudge history for auto-booking demo
+- [x] Auto-booking logic and discount tier calculation
+> "Pulse works because it meets people where they are. No wearables. No clinic visits to start. Just 60 seconds a day — that most people will actually do, because they're being rewarded for it.
+>
+> The AI watches patterns. The agent removes procrastination. The clinics get qualified, engaged patients. And users get something no other app gives them: early detection without paranoia.
+>
+> Users pay a subscription. Clinics pay to receive
 
 **Tap:** City Wellness Clinic → booking screen with:
 - 20% discount applied automatically
@@ -134,10 +194,11 @@ Swipe through all 8 cards briskly. Don't linger — show the speed and feel.
 ## Scene 8 — The Model (Verbal Close) [~30 seconds]
 
 *Optional: switch to a single summary slide*
-
-**Say:**
-> "Pulse works because it meets people where they are. No wearables. No clinic visits to start. Just 60 seconds a day — that most people will actually do, because they're being rewarded for it.
->
+x] Google Gemini API set up and key configured
+- [x] System prompt written and tested
+- [x] Streaming response rendering in analysis modal
+- [x] Output tested against Amara's mock data to confirm it flags correctly
+- [x] Pattern detection logic for auto-booking nudges
 > Users pay a subscription. Clinics pay to receive engaged, referred patients. As the dataset grows, population health insights become a third revenue stream.
 >
 > We're not building another health app. We're building the habit layer that makes preventive healthcare actually happen."
