@@ -12,7 +12,7 @@ const AUTO_BOOKING_THRESHOLD = 3;
 
 /**
  * Custom hook for tracking checkup nudges
- * - Increments when AI raises concern and recommends checkup
+ * - Increments when AI raises concern and recommends checkup   
  * - Resets when user books/completes checkup
  * - Triggers auto-booking after 3+ ignored nudges
  */

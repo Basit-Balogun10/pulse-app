@@ -12,7 +12,7 @@ import {
   Heart,
   ChevronDown,
 } from 'lucide-react';
-import { amaraFullStory } from '@/lib/mock-data-extended';
+import { amaraFullStory } from '@/lib/amara-story-data';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 
 export function AnalyticsView() {

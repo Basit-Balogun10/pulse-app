@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MapPin, Star, Clock, CheckCircle, Copy, X, ChevronRight, Search, Filter, SlidersHorizontal, Sparkles, Map } from 'lucide-react';
 import { clinics } from '@/lib/mock-data';
-import { amaraFullStory } from '@/lib/mock-data-extended';
+import { amaraFullStory } from '@/lib/amara-story-data';
 import { Input } from '@/components/ui/input';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Slider } from '@/components/ui/slider';

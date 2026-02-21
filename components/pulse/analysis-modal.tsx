@@ -29,14 +29,14 @@ export function AnalysisModal({ isOpen, overview, onDismiss, onBookClinic, onSee
             transition={{ type: 'spring', damping: 30, stiffness: 300 }}
             className="fixed bottom-0 left-0 right-0 z-50 bg-card rounded-t-3xl border-t border-border p-6 max-h-[75vh] overflow-y-auto"
           >
-            {
+            <>
                 <div className="flex items-center justify-between mb-5">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-2xl bg-[#84CC16]/10 flex items-center justify-center">
                       <Activity className="w-5 h-5 text-[#84CC16]" />
                     </div>
                     <div>
-                      <h3 className="font-bold text-foreground">Today's Insight</h3>
+                      <h3 className="font-bold text-foreground">Today&apos;s Insight</h3>
                       <p className="text-xs text-muted-foreground">Pulse AI · Just now</p>
                     </div>
                   </div>
@@ -82,7 +82,7 @@ export function AnalysisModal({ isOpen, overview, onDismiss, onBookClinic, onSee
                     Close
                   </motion.button>
                 </div>
-              
+            </>
           </motion.div>
         </>
       )}

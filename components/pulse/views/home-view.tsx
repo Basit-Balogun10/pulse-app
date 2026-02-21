@@ -166,14 +166,14 @@ export function HomeView({ onChatOpen, onStartCheckIn, todayEntry }: HomeViewPro
                       ? 'Auto-booking recommended' 
                       : shouldShowNudge 
                         ? 'Checkup recommended' 
-                        : 'Tap to view today's insights'
+                        : 'Tap to view today&apos;s insights'
                     }
                   </p>
                 </div>
               </div>
               <p className="text-sm text-foreground/70 leading-relaxed">
                 {shouldAutoBook 
-                  ? `You've ignored ${nudgeCount} checkup recommendations. We recommend immediate booking with 100% discount.`
+                  ? `You&apos;ve ignored ${nudgeCount} checkup recommendations. We recommend immediate booking with 100% discount.`
                   : 'Your daily check-in has been analyzed. View personalized health insights and recommendations based on your entries.'
                 }
               </p>

@@ -284,7 +284,7 @@ export const amaraDay8: CheckInEntry = {
     summary: "Notable shift today. Energy dropped to 2/5, sleep quality is poor (5.5hrs), mood is low, and appetite has decreased. You also noted feeling tired all day. This is the first time we're seeing multiple indicators decline together.",
     concern_level: 'moderate',
     patterns_detected: ['Significant energy drop to 2/5', 'Sleep quality degradation', 'Mood decline', 'Appetite reduction', 'Social isolation noted'],
-    recommendation: 'Monitor closely over the next few days. Ensure you're getting adequate rest and nutrition.',
+    recommendation: 'Monitor closely over the next few days. Ensure you&apos;re getting adequate rest and nutrition.',
   },
 };
 
@@ -641,10 +641,10 @@ export const amaraDay15DetailedAnalysis = {
       factor: 'Age: 28',
       relevance: 'Reproductive health considerations for abdominal symptoms in women of childbearing age',
     },
-  },
+  ],
   recommendation: {
     urgency: 'High - Schedule within 2-3 days',
-    reasoning: "Based on the 14-day pattern analysis, we strongly recommend scheduling a checkup within the next 2-3 days. The combination of escalating physical symptoms (lower abdomen discomfort with increased intensity AND new fever), sustained energy/sleep disruption over 8 days, and appetite decline with meal skipping — particularly given your family history and overdue checkup status — warrants professional evaluation.",
+    reasoning: "Based on the 14-day pattern analysis, we strongly recommend scheduling a checkup within the next 2-3 days. The combination of escalating physical symptoms (lower abdomen discomfort with increased intensity AND new fever), sustained energy/sleep disruption over 8 days, and appetite decline with meal skipping - particularly given your family history and overdue checkup status - warrants professional evaluation.",
     possibleAreas: [
       'Reproductive health (given age and localized lower abdomen symptoms)',
       'Gastrointestinal issues (given location of pain and appetite changes)',
