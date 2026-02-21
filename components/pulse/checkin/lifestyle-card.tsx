@@ -12,13 +12,23 @@ interface Props {
 export function LifestyleCard({ onValue, value }: Props) {
   const [water, setWater] = useState<boolean | null>(value?.water ?? null);
   const [exercise, setExercise] = useState<boolean | null>(value?.exercise ?? null);
+  const [meditation, setMeditation] = useState<boolean | null>(value?.meditation ?? null);
+  const [screenTime, setScreenTime] = useState<boolean | null>(value?.screenTime ?? null);
+  const [socialTime, setSocialTime] = useState<boolean | null>(value?.socialTime ?? null);
+  const [customNote, setCustomNote] = useState<string>(value?.customNote ?? '');
 
-  const update = (w: boolean | null, e: boolean | null) => {
-    if (w !== null && e !== null) onValue({ water: w, exercise: e });
+  const update = (w: boolean | null, e: boolean | null, m: boolean | null, s: boolean | null, soc: boolean | null, note: string) => {
+    if (w !== null && e !== null && m !== null && s !== null && soc !== null) {
+      onValue({ water: w, exercise: e, meditation: m, screenTime: s, socialTime: soc, customNote: note });
+    }
   };
 
-  const selWater = (v: boolean) => { setWater(v); update(v, exercise); };
-  const selExercise = (v: boolean) => { setExercise(v); update(water, v); };
+  const selWater = (v: boolean) => { setWater(v); update(v, exercise, meditation, screenTime, socialTime, customNote); };
+  const selExercise = (v: boolean) => { setExercise(v); update(water, v, meditation, screenTime, socialTime, customNote); };
+  const selMeditation = (v: boolean) => { setMeditation(v); update(water, exercise, v, screenTime, socialTime, customNote); };
+  const selScreenTime = (v: boolean) => { setScreenTime(v); update(water, exercise, meditation, v, socialTime, customNote); };
+  const selSocialTime = (v: boolean) => { setSocialTime(v); update(water, exercise, meditation, screenTime, v, customNote); };
+  const handleCustomNote = (note: string) => { setCustomNote(note); update(water, exercise, meditation, screenTime, socialTime, note); };
 
   const Row = ({
     emoji,
@@ -70,7 +80,7 @@ export function LifestyleCard({ onValue, value }: Props) {
         Quick lifestyle snapshot for today.
       </h3>
 
-      <div className="space-y-3">
+      <div className="space-y-3 max-h-[45vh] overflow-y-auto">
         <Row
           emoji="💧"
           question="Enough water today?"
@@ -89,12 +99,49 @@ export function LifestyleCard({ onValue, value }: Props) {
           yesLabel="Yes"
           noLabel="Not today"
         />
+        <Row
+          emoji="🧘"
+          question="Meditate or relax?"
+          state={meditation}
+          onYes={() => selMeditation(true)}
+          onNo={() => selMeditation(false)}
+          yesLabel="Yes"
+          noLabel="No time"
+        />
+        <Row
+          emoji="📱"
+          question="Healthy screen time?"
+          state={screenTime}
+          onYes={() => selScreenTime(true)}
+          onNo={() => selScreenTime(false)}
+          yesLabel="Balanced"
+          noLabel="Too much"
+        />
+        <Row
+          emoji="👥"
+          question="Social interaction?"
+          state={socialTime}
+          onYes={() => selSocialTime(true)}
+          onNo={() => selSocialTime(false)}
+          yesLabel="Good"
+          noLabel="Isolated"
+        />
       </div>
 
-      {/* Medications static tile */}
-      <div className="mt-3 flex items-center gap-3 px-4 py-3.5 rounded-2xl bg-[#818CF8]/10">
-        <span className="text-xl">💊</span>
-        <p className="text-sm text-[#818CF8] font-medium">No medications listed in your profile.</p>
+      {/* Custom input */}
+      <div className="mt-3 bg-muted rounded-2xl p-3 border-2 border-transparent focus-within:border-[#84CC16] transition-colors">
+        <div className="flex items-center gap-2 mb-1">
+          <span className="text-lg">📝</span>
+          <label className="text-xs font-semibold text-muted-foreground uppercase">Other lifestyle notes</label>
+        </div>
+        <input
+          type="text"
+          value={customNote}
+          onChange={(e) => handleCustomNote(e.target.value)}
+          placeholder="e.g., Ate out today, took vitamins..."
+          className="w-full bg-transparent text-sm text-foreground placeholder:text-muted-foreground focus:outline-none"
+          maxLength={100}
+        />
       </div>
     </div>
   );

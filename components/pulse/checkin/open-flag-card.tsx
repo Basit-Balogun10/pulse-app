@@ -92,13 +92,13 @@ export function OpenFlagCard({ onValue, onNext }: Props) {
       {/* Quick-pick chips */}
       <AnimatePresence>
         {note.length === 0 && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex flex-wrap gap-2 mb-4">
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex gap-2 mb-4 overflow-x-auto pb-2 scrollbar-hide">
             {CHIPS.map((chip) => (
               <motion.button
                 key={chip}
                 onClick={() => handleChip(chip)}
                 whileTap={{ scale: 0.97 }}
-                className="px-3 py-2 rounded-xl bg-muted border border-border text-sm text-foreground font-medium hover:bg-muted/70 transition-colors"
+                className="shrink-0 px-3 py-2 rounded-xl bg-muted border border-border text-sm text-foreground font-medium hover:bg-muted/70 transition-colors whitespace-nowrap"
               >
                 {chip}
               </motion.button>
@@ -107,24 +107,14 @@ export function OpenFlagCard({ onValue, onNext }: Props) {
         )}
       </AnimatePresence>
 
-      {/* Split CTA */}
-      <div className="flex gap-3">
-        <motion.button
-          onClick={handleSkip}
-          whileTap={{ scale: 0.97 }}
-          className="flex-1 py-3 rounded-2xl border-2 border-border text-muted-foreground font-semibold text-sm hover:bg-muted transition-colors"
-        >
-          Skip
-        </motion.button>
-        <motion.button
-          onClick={handleDone}
-          whileTap={{ scale: 0.97 }}
-          className="text-white py-3 rounded-2xl font-semibold text-sm transition-colors"
-          style={{ flex: 2, backgroundColor: note.length > 0 ? '#84CC16' : '#475569' }}
-        >
-          {note.length > 0 ? 'Done ✓' : 'Log entry →'}
-        </motion.button>
-      </div>
+      {/* Skip button only */}
+      <motion.button
+        onClick={handleSkip}
+        whileTap={{ scale: 0.97 }}
+        className="w-full py-3 rounded-2xl border-2 border-border text-muted-foreground font-semibold text-sm hover:bg-muted transition-colors"
+      >
+        Skip
+      </motion.button>
     </div>
   );
 }

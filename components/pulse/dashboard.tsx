@@ -72,6 +72,16 @@ export function Dashboard() {
           />
         );
       case 'checkin':
+        // Prevent double-entry - if today's entry is complete, show home view with message
+        if (todayEntry !== null) {
+          return (
+            <HomeView
+              onChatOpen={() => setIsChatOpen(true)}
+              onStartCheckIn={() => setActiveView('checkin')}
+              todayEntry={todayEntry}
+            />
+          );
+        }
         return <CheckInView onComplete={handleCheckInComplete} />;
       case 'analysis':
         return <AnalysisView />;

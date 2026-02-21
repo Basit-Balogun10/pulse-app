@@ -2,8 +2,12 @@
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MapPin, Star, Clock, CheckCircle, Copy, X, ChevronRight } from 'lucide-react';
+import { MapPin, Star, Clock, CheckCircle, Copy, X, ChevronRight, Search, Filter, SlidersHorizontal } from 'lucide-react';
 import { clinics } from '@/lib/mock-data';
+import { Input } from '@/components/ui/input';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
+import { Slider } from '@/components/ui/slider';
+import { Button } from '@/components/ui/button';
 
 interface ClinicDetailsProps {
   clinic: (typeof clinics)[0];
@@ -102,13 +106,170 @@ function ClinicDetails({ clinic, onClose }: ClinicDetailsProps) {
 
 export function ClinicsView() {
   const [selectedClinic, setSelectedClinic] = useState<(typeof clinics)[0] | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [maxDistance, setMaxDistance] = useState(10);
+  const [minRating, setMinRating] = useState(0);
+  const [selectedSpecialty, setSelectedSpecialty] = useState<string>('all');
+  const [sortBy, setSortBy] = useState<'distance' | 'rating' | 'discount'>('distance');
+  const [filtersOpen, setFiltersOpen] = useState(false);
+
+  // Get unique specialties
+  const specialties = ['all', ...Array.from(new Set(clinics.map(c => c.specialty)))];
+
+  // Filter clinics
+  const filteredClinics = clinics
+    .filter(clinic => {
+      const matchesSearch = clinic.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                           clinic.specialty.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesDistance = clinic.distance <= maxDistance;
+      const matchesRating = clinic.rating >= minRating;
+      const matchesSpecialty = selectedSpecialty === 'all' || clinic.specialty === selectedSpecialty;
+      return matchesSearch && matchesDistance && matchesRating && matchesSpecialty;
+    })
+    .sort((a, b) => {
+      if (sortBy === 'distance') return a.distance - b.distance;
+      if (sortBy === 'rating') return b.rating - a.rating;
+      // Sort by discount percentage
+      const aDiscount = parseInt(a.discount);
+      const bDiscount = parseInt(b.discount);
+      return bDiscount - aDiscount;
+    });
 
   return (
     <div className="flex flex-col h-full">
       {/* Sticky Header */}
-      <div className="sticky top-0 z-10 bg-background px-4 pt-6 pb-4 border-b border-border">
-        <h2 className="text-2xl font-bold text-foreground">Partner Clinics</h2>
-        <p className="text-sm text-muted-foreground mt-0.5">Redeem your discount at any partner</p>
+      <div className="sticky top-0 z-10 bg-background px-4 pt-6 pb-3 border-b border-border space-y-3">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-2xl font-bold text-foreground">Partner Clinics</h2>
+            <p className="text-sm text-muted-foreground mt-0.5">
+              {filteredClinics.length} clinic{filteredClinics.length !== 1 ? 's' : ''} available
+            </p>
+          </div>
+          
+          {/* Filter Sheet */}
+          <Sheet open={filtersOpen} onOpenChange={setFiltersOpen}>
+            <SheetTrigger asChild>
+              <Button variant="outline" size="icon" className="rounded-xl">
+                <SlidersHorizontal className="h-5 w-5" />
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="bottom" className="h-[85vh]">
+              <SheetHeader>
+                <SheetTitle>Filter & Sort</SheetTitle>
+              </SheetHeader>
+              <div className="py-6 space-y-6">
+                {/* Sort By */}
+                <div>
+                  <label className="text-sm font-semibold text-foreground mb-3 block">Sort By</label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {[
+                      { value: 'distance', label: 'Distance' },
+                      { value: 'rating', label: 'Rating' },
+                      { value: 'discount', label: 'Discount' },
+                    ].map((option) => (
+                      <button
+                        key={option.value}
+                        onClick={() => setSortBy(option.value as typeof sortBy)}
+                        className={`py-2 px-3 rounded-xl text-sm font-semibold transition-colors ${
+                          sortBy === option.value
+                            ? 'bg-[#84CC16] text-white'
+                            : 'bg-muted text-foreground hover:bg-muted/70'
+                        }`}
+                      >
+                        {option.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Max Distance */}
+                <div>
+                  <label className="text-sm font-semibold text-foreground mb-3 block">
+                    Max Distance: {maxDistance} km
+                  </label>
+                  <Slider
+                    value={[maxDistance]}
+                    onValueChange={(value) => setMaxDistance(value[0])}
+                    max={20}
+                    min={1}
+                    step={1}
+                    className="w-full"
+                  />
+                </div>
+
+                {/* Min Rating */}
+                <div>
+                  <label className="text-sm font-semibold text-foreground mb-3 block">
+                    Minimum Rating: {minRating === 0 ? 'Any' : minRating}⭐
+                  </label>
+                  <Slider
+                    value={[minRating]}
+                    onValueChange={(value) => setMinRating(value[0])}
+                    max={5}
+                    min={0}
+                    step={0.5}
+                    className="w-full"
+                  />
+                </div>
+
+                {/* Specialty Filter */}
+                <div>
+                  <label className="text-sm font-semibold text-foreground mb-3 block">Specialty</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {specialties.map((specialty) => (
+                      <button
+                        key={specialty}
+                        onClick={() => setSelectedSpecialty(specialty)}
+                        className={`py-2 px-3 rounded-xl text-sm font-semibold transition-colors capitalize ${
+                          selectedSpecialty === specialty
+                            ? 'bg-[#84CC16] text-white'
+                            : 'bg-muted text-foreground hover:bg-muted/70'
+                        }`}
+                      >
+                        {specialty}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Reset & Apply */}
+                <div className="flex gap-3 pt-4">
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setMaxDistance(10);
+                      setMinRating(0);
+                      setSelectedSpecialty('all');
+                      setSortBy('distance');
+                    }}
+                    className="flex-1"
+                  >
+                    Reset
+                  </Button>
+                  <Button
+                    onClick={() => setFiltersOpen(false)}
+                    className="flex-1 bg-[#84CC16] hover:bg-[#84CC16]/90"
+                  >
+                    Apply
+                  </Button>
+                </div>
+              </div>
+            </SheetContent>
+          </Sheet>
+        </div>
+
+        {/* Search Bar */}
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input
+            type="text"
+            placeholder="Search clinics or specialties..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10 rounded-2xl border-2 focus-visible:ring-[#84CC16]"
+          />
+        </div>
       </div>
 
       <div className="px-4 py-4 max-w-2xl mx-auto w-full">
@@ -127,45 +288,62 @@ export function ClinicsView() {
               exit={{ opacity: 0 }}
               className="space-y-3"
             >
-              {clinics.map((clinic, i) => (
-                <motion.button
-                  key={clinic.id}
-                  initial={{ opacity: 0, y: 16 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.08 }}
-                  onClick={() => setSelectedClinic(clinic)}
-                  whileTap={{ scale: 0.98 }}
-                  className="w-full text-left bg-card rounded-3xl p-5 shadow-sm border border-border hover:border-[#84CC16]/40 hover:shadow-md transition-all"
-                >
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex-1">
-                      <h3 className="text-base font-bold text-foreground mb-1">{clinic.name}</h3>
-                      <p className="text-sm text-muted-foreground mb-3">{clinic.specialty}</p>
-                      <div className="flex items-center gap-3">
-                        <div className="flex items-center gap-0.5">
-                          {Array.from({ length: 5 }).map((_, j) => (
-                            <Star
-                              key={j}
-                              className={`w-3 h-3 ${j < Math.floor(clinic.rating) ? 'text-yellow-500' : 'text-muted-foreground'}`}
-                              fill={j < Math.floor(clinic.rating) ? 'currentColor' : 'none'}
-                            />
-                          ))}
+              {filteredClinics.length === 0 ? (
+                <div className="text-center py-12">
+                  <p className="text-muted-foreground text-sm mb-2">No clinics match your filters</p>
+                  <button
+                    onClick={() => {
+                      setSearchQuery('');
+                      setMaxDistance(10);
+                      setMinRating(0);
+                      setSelectedSpecialty('all');
+                    }}
+                    className="text-[#84CC16] text-sm font-semibold hover:underline"
+                  >
+                    Reset filters
+                  </button>
+                </div>
+              ) : (
+                filteredClinics.map((clinic, i) => (
+                  <motion.button
+                    key={clinic.id}
+                    initial={{ opacity: 0, y: 16 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * 0.05 }}
+                    onClick={() => setSelectedClinic(clinic)}
+                    whileTap={{ scale: 0.98 }}
+                    className="w-full text-left bg-card rounded-3xl p-5 shadow-sm border border-border hover:border-[#84CC16]/40 hover:shadow-md transition-all"
+                  >
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex-1">
+                        <h3 className="text-base font-bold text-foreground mb-1">{clinic.name}</h3>
+                        <p className="text-sm text-muted-foreground mb-3">{clinic.specialty}</p>
+                        <div className="flex items-center gap-3">
+                          <div className="flex items-center gap-0.5">
+                            {Array.from({ length: 5 }).map((_, j) => (
+                              <Star
+                                key={j}
+                                className={`w-3 h-3 ${j < Math.floor(clinic.rating) ? 'text-yellow-500' : 'text-muted-foreground'}`}
+                                fill={j < Math.floor(clinic.rating) ? 'currentColor' : 'none'}
+                              />
+                            ))}
+                          </div>
+                          <span className="text-xs font-semibold text-foreground">{clinic.rating}</span>
+                          <span className="text-xs text-muted-foreground flex items-center gap-1">
+                            <MapPin className="w-3 h-3" /> {clinic.distance} km
+                          </span>
                         </div>
-                        <span className="text-xs font-semibold text-foreground">{clinic.rating}</span>
-                        <span className="text-xs text-muted-foreground flex items-center gap-1">
-                          <MapPin className="w-3 h-3" /> {clinic.distance} km
-                        </span>
+                      </div>
+                      <div className="flex flex-col items-end gap-2">
+                        <div className="px-3 py-1 bg-[#84CC16]/10 text-[#84CC16] text-xs font-bold rounded-full">
+                          {clinic.discount} off
+                        </div>
+                        <ChevronRight className="w-5 h-5 text-muted-foreground" />
                       </div>
                     </div>
-                    <div className="flex flex-col items-end gap-2">
-                      <div className="px-3 py-1 bg-[#84CC16]/10 text-[#84CC16] text-xs font-bold rounded-full">
-                        {clinic.discount} off
-                      </div>
-                      <ChevronRight className="w-5 h-5 text-muted-foreground" />
-                    </div>
-                  </div>
-                </motion.button>
-              ))}
+                  </motion.button>
+                ))
+              )}
             </motion.div>
           )}
         </AnimatePresence>

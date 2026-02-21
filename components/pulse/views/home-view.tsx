@@ -2,9 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Flame, MessageCircle, Zap } from 'lucide-react';
+import { Flame, MessageCircle, Zap, Sparkles } from 'lucide-react';
 import { userProfile, mockHealthData } from '@/lib/mock-data';
 import { DayCarousel } from '@/components/pulse/day-carousel';
+import { AnalysisModal, generateInsight } from '@/components/pulse/analysis-modal';
+import { weatherSummary, getWeatherContext } from '@/lib/weather';
 
 const TODAY = '2025-02-23';
 
@@ -26,10 +28,29 @@ export function HomeView({ onChatOpen, onStartCheckIn, todayEntry }: HomeViewPro
   const [selectedDate, setSelectedDate] = useState(TODAY);
   const [missedDays] = useState<string[]>([]);
   const [subheading, setSubheading] = useState(SUBHEADINGS[0]);
+  const [showAnalysisModal, setShowAnalysisModal] = useState(false);
+  const [analysisLoading, setAnalysisLoading] = useState(false);
+  const [analysisResult, setAnalysisResult] = useState<string | null>(null);
 
   useEffect(() => {
     setSubheading(SUBHEADINGS[Math.floor(Math.random() * SUBHEADINGS.length)]);
   }, []);
+
+  const handleOpenAnalysis = async () => {
+    if (!todayEntry) return;
+    
+    setShowAnalysisModal(true);
+    setAnalysisLoading(true);
+    
+    const [weather] = await Promise.all([
+      getWeatherContext(),
+      new Promise((r) => setTimeout(r, 1500)),
+    ]);
+    
+    const insight = generateInsight(todayEntry, weatherSummary(weather));
+    setAnalysisResult(insight);
+    setAnalysisLoading(false);
+  };
 
   const isToday = selectedDate === TODAY;
   const hasTodayEntry = isToday && todayEntry != null;
@@ -121,6 +142,29 @@ export function HomeView({ onChatOpen, onStartCheckIn, todayEntry }: HomeViewPro
             </motion.div>
           )}
 
+          {/* AI Analysis Card — only when today's check-in is complete */}
+          {isToday && hasTodayEntry && (
+            <motion.div
+              variants={item(2)} initial="hidden" animate="visible"
+              onClick={handleOpenAnalysis}
+              whileTap={{ scale: 0.98 }}
+              className="bg-gradient-to-br from-[#818CF8]/10 to-[#A855F7]/10 rounded-3xl p-5 border border-[#818CF8]/20 cursor-pointer hover:border-[#818CF8]/40 transition-colors"
+            >
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-10 h-10 rounded-2xl bg-[#818CF8]/20 flex items-center justify-center">
+                  <Sparkles className="w-5 h-5 text-[#818CF8]" />
+                </div>
+                <div>
+                  <p className="font-bold text-foreground text-sm">AI Analysis Available</p>
+                  <p className="text-xs text-muted-foreground">Tap to view today's insights</p>
+                </div>
+              </div>
+              <p className="text-sm text-foreground/70 leading-relaxed">
+                Your daily check-in has been analyzed. View personalized health insights and recommendations based on your entries.
+              </p>
+            </motion.div>
+          )}
+
           {/* Metrics card */}
           <motion.div
             key={selectedDate}
@@ -169,6 +213,14 @@ export function HomeView({ onChatOpen, onStartCheckIn, todayEntry }: HomeViewPro
 
         </div>
       </div>
+
+      {/* AI Analysis Modal */}
+      <AnalysisModal
+        isOpen={showAnalysisModal}
+        isLoading={analysisLoading}
+        result={analysisResult}
+        onDismiss={() => setShowAnalysisModal(false)}
+      />
     </div>
   );
 }

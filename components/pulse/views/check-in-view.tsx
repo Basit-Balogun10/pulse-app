@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Check } from 'lucide-react';
+import { ArrowLeft, Check, ChevronRight } from 'lucide-react';
 import { EnergyCard } from '@/components/pulse/checkin/energy-card';
 import { SleepCard } from '@/components/pulse/checkin/sleep-card';
 import { SymptomsCard } from '@/components/pulse/checkin/symptoms-card';
@@ -131,7 +131,7 @@ export function CheckInView({ onComplete }: CheckInViewProps) {
           {currentIndex === CARDS.length - 1 ? (
             <><Check className="w-5 h-5" /> Complete</>
           ) : isCompleted ? (
-            'Next →'
+            <>Next <ChevronRight className="w-5 h-5" /></>
           ) : (
             'Select to continue'
           )}

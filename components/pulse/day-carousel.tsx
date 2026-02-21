@@ -2,6 +2,9 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import { Calendar } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Button } from '@/components/ui/button';
 
 interface DayCarouselProps {
   onDaySelect: (date: string) => void;
@@ -18,7 +21,8 @@ export function DayCarousel({ onDaySelect, selectedDate, missedDays = [] }: DayC
   useEffect(() => {
     const daysList = [];
     const today = new Date(TODAY_STR);
-    for (let i = 13; i >= 0; i--) {
+    // Show only 5-6 days at a time instead of 14
+    for (let i = 5; i >= 0; i--) {
       const date = new Date(today);
       date.setDate(date.getDate() - i);
       const dateStr = date.toISOString().split('T')[0];
@@ -51,52 +55,83 @@ export function DayCarousel({ onDaySelect, selectedDate, missedDays = [] }: DayC
     return pairs[idx % pairs.length];
   };
 
+  const handleDateJump = (date: Date) => {
+    const dateStr = date.toISOString().split('T')[0];
+    onDaySelect(dateStr);
+  };
+
   return (
-    <div
-      ref={scrollContainerRef}
-      className="flex gap-1.5 px-4 pb-1 overflow-x-auto scroll-smooth scrollbar-hide"
-    >
-      {days.map((day) => {
-        const colors = getPillColors(day.date);
-        const isSelected = day.date === selectedDate;
-        const missed = isMissed(day.date);
-        const today = isToday(day.date);
-
-        return (
-          <motion.button
-            key={day.date}
-            onClick={() => onDaySelect(day.date)}
-            whileTap={{ scale: 0.9 }}
-            className={`shrink-0 flex flex-col items-center gap-1 py-2 px-2 rounded-xl transition-all ${
-              isSelected ? 'bg-primary/10 ring-2 ring-primary/40' : 'hover:bg-muted/50'
-            }`}
+    <div className="flex items-center gap-2 px-4 pb-1">
+      {/* Date Jump Button */}
+      <Popover>
+        <PopoverTrigger asChild>
+          <Button
+            variant="outline"
+            className="shrink-0 h-10 w-10 p-0 rounded-xl border-2 border-border hover:bg-muted/50"
           >
-            {/* Diagonal capsule pill */}
-            <div className="w-7 h-7 flex items-center justify-center">
-              <div
-                style={{
-                  width: '30px',
-                  height: '11px',
-                  borderRadius: '9999px',
-                  background: `linear-gradient(90deg, ${colors.top} 50%, ${colors.bottom} 50%)`,
-                  transform: 'rotate(45deg)',
-                  opacity: missed ? 0.4 : 1,
-                  boxShadow: today ? `0 0 8px ${colors.top}60` : undefined,
-                }}
-              />
-            </div>
+            <Calendar className="h-4 w-4" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-auto p-0" align="start">
+          <div className="p-4">
+            <input
+              type="date"
+              max={TODAY_STR}
+              onChange={(e) => handleDateJump(new Date(e.target.value))}
+              className="px-3 py-2 rounded-lg border-2 border-border bg-background text-foreground focus:outline-none focus:border-primary"
+            />
+          </div>
+        </PopoverContent>
+      </Popover>
 
-            {/* Label */}
-            <span
-              className={`text-xs font-semibold leading-none ${
-                today ? 'text-[#84CC16]' : 'text-muted-foreground'
+      {/* Scrollable days */}
+      <div
+        ref={scrollContainerRef}
+        className="flex gap-3 pb-1 overflow-x-auto scroll-smooth scrollbar-hide flex-1"
+      >
+        {days.map((day) => {
+          const colors = getPillColors(day.date);
+          const isSelected = day.date === selectedDate;
+          const missed = isMissed(day.date);
+          const today = isToday(day.date);
+
+          return (
+            <motion.button
+              key={day.date}
+              onClick={() => onDaySelect(day.date)}
+              whileTap={{ scale: 0.9 }}
+              className={`shrink-0 flex flex-col items-center gap-1.5 py-2 px-3 rounded-xl transition-all ${
+                isSelected ? 'bg-primary/10 ring-2 ring-primary/40' : 'hover:bg-muted/50'
               }`}
             >
-              {today ? 'Today' : day.label}
-            </span>
-          </motion.button>
-        );
-      })}
+              {/* Diagonal capsule pill */}
+              <div className="w-9 h-9 flex items-center justify-center">
+                <div
+                  style={{
+                    width: '36px',
+                    height: '14px',
+                    borderRadius: '9999px',
+                    background: `linear-gradient(90deg, ${colors.top} 50%, ${colors.bottom} 50%)`,
+                    transform: 'rotate(45deg)',
+                    opacity: missed ? 0.3 : 1,
+                    boxShadow: today ? `0 0 10px ${colors.top}70` : undefined,
+                    filter: missed ? 'grayscale(0.6)' : undefined,
+                  }}
+                />
+              </div>
+
+              {/* Label */}
+              <span
+                className={`text-xs font-semibold leading-none ${
+                  today ? 'text-[#84CC16]' : missed ? 'text-muted-foreground/50' : 'text-muted-foreground'
+                }`}
+              >
+                {today ? 'Today' : day.label}
+              </span>
+            </motion.button>
+          );
+        })}
+      </div>
 
       <style>{`
         .scrollbar-hide::-webkit-scrollbar { display: none; }
