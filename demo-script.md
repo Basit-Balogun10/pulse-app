@@ -587,12 +587,13 @@ You've now demonstrated:
 - [x] Chat interface with AI assistant (full health context, streaming responses from Gemini API)
 - [x] Chat detection context tracking (extract health info from messages, display detection count)
 - [x] Profile screen displaying health profile fields
-- [ ] Editable health profile form (all fields updatable)
-- [ ] Billing & subscription view (current plan, discount tier, auto-booking eligibility)
+- [x] Editable health profile form (all fields updatable with localStorage persistence)
+- [x] Billing & subscription view (tiers, discounts, subscription plans, active discount code)
 - [ ] Subscription management options (change plan, payment method, history)
 
 ### Clinic Partner Components
 
+- [ ] Clinic partner onboarding (similar to user onboarding - collect clinic details)
 - [ ] Clinic dashboard with appointment notifications
 - [ ] Clinic profile management (specialties, pricing, location, hours)
 - [ ] Embedded map or geocoded address display for clinic location
