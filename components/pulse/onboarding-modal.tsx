@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronRight, ArrowLeft } from 'lucide-react';
+import { DateTimePicker } from '@/components/ui/date-time-picker';
 
 interface OnboardingModalProps {
   isOpen: boolean;
@@ -213,15 +214,12 @@ export function OnboardingModal({ isOpen, onSave }: OnboardingModalProps) {
                     <>
                       <SelectGroup label="Smoking Status" options={['Non-smoker', 'Ex-smoker', 'Occasional', 'Current smoker']} value={form.smokingStatus} onChange={(v) => set('smokingStatus', v)} />
                       <SelectGroup label="Alcohol Use" options={['None', 'Occasional', 'Regular (weekly)', 'Daily']} value={form.alcoholUse} onChange={(v) => set('alcoholUse', v)} />
-                      <div>
-                        <label className="block text-sm font-semibold text-foreground mb-2">Last Medical Checkup</label>
-                        <input
-                          type="date"
-                          value={form.lastCheckup}
-                          onChange={(e) => set('lastCheckup', e.target.value)}
-                          className="w-full px-4 py-3 rounded-xl bg-muted border-2 border-transparent focus:border-[#84CC16] focus:outline-none text-foreground"
-                        />
-                      </div>
+                      <DateTimePicker
+                        label="Last Medical Checkup"
+                        value={form.lastCheckup}
+                        onChange={(v) => set('lastCheckup', v)}
+                        placeholder="Select date of last checkup"
+                      />
                     </>
                   )}
                 </motion.div>

@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { Calendar } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
+import { DateTimePicker } from '@/components/ui/date-time-picker';
 import { amaraFullStory } from '@/lib/amara-story-data';
 import { getTodayDate } from '@/lib/utils';
 
@@ -79,11 +80,10 @@ export function DayCarousel({ onDaySelect, selectedDate, missedDays = [] }: DayC
         </PopoverTrigger>
         <PopoverContent className="w-auto p-0" align="start">
           <div className="p-4">
-            <input
-              type="date"
-              max={TODAY_STR}
-              onChange={(e) => handleDateJump(new Date(e.target.value))}
-              className="px-3 py-2 rounded-lg border-2 border-border bg-background text-foreground focus:outline-none focus:border-primary"
+            <DateTimePicker
+              value={selectedDate.toISOString().split('T')[0]}
+              onChange={(val) => handleDateJump(new Date(val))}
+              placeholder="Jump to date"
             />
           </div>
         </PopoverContent>

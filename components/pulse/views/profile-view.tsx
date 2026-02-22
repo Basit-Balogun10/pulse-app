@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { userProfile } from '@/lib/mock-data';
 import { BillingView } from '@/components/pulse/views/billing-view';
+import { DateTimePicker } from '@/components/ui/date-time-picker';
 
 // ─── types ────────────────────────────────────────────────────────────────────
 interface ProfileData {
@@ -208,15 +209,12 @@ function EditSheet({
               <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Alcohol</label>
               {select('alcoholUse', ALCO_OPTS)}
             </div>
-            <div>
-              <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Last Checkup</label>
-              <input
-                type="date"
-                value={form.lastCheckup}
-                onChange={(e) => onSingleSelect('lastCheckup', e.target.value)}
-                className="w-full px-4 py-3 rounded-xl bg-muted border-2 border-transparent focus:border-[#84CC16] focus:outline-none text-foreground text-sm"
-              />
-            </div>
+            <DateTimePicker
+              label="Last Checkup"
+              value={form.lastCheckup}
+              onChange={(v) => onSingleSelect('lastCheckup', v)}
+              placeholder="Select date of last checkup"
+            />
           </div>
         </section>
       </div>

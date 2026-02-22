@@ -6,6 +6,7 @@ import { Send, X, MessageCircle, Maximize2, Minimize2, Paperclip, Image as Image
 import { streamGeminiResponse } from '@/lib/gemini';
 import { userProfile } from '@/lib/mock-data';
 import { amaraFullStory, amaraChatDetections, type ChatDetection } from '@/lib/amara-story-data';
+import { DateTimePicker } from '@/components/ui/date-time-picker';
 
 interface Message {
   id: string;
@@ -497,12 +498,13 @@ export function ChatBox({ isOpen, onClose, checkInHistory = amaraFullStory, curr
                 >
                   <div className="px-6 py-3">
                     <div className="flex items-center gap-3">
-                      <input
-                        type="date"
-                        value={selectedDate}
-                        onChange={(e) => setSelectedDate(e.target.value)}
-                        className="flex-1 px-4 py-2 rounded-xl border-2 border-border bg-background text-foreground focus:border-[#84CC16] outline-none transition-colors text-sm"
-                      />
+                      <div className="flex-1">
+                        <DateTimePicker
+                          value={selectedDate}
+                          onChange={setSelectedDate}
+                          placeholder="Select date to jump to"
+                        />
+                      </div>
                       <motion.button
                         whileTap={{ scale: 0.95 }}
                         onClick={handleJumpToDate}
