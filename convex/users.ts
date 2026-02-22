@@ -99,9 +99,16 @@ export const getStreak = query({
     const dates = new Set(entries.map((e) => e.date));
 
     const today = new Date();
-    let streak = 0;
+    const todayStr = today.toISOString().split("T")[0];
+    
+    // Start counting from today if there's an entry, otherwise from yesterday
     let current = new Date(today);
+    if (!dates.has(todayStr)) {
+      // No entry for today yet - start from yesterday
+      current.setDate(current.getDate() - 1);
+    }
 
+    let streak = 0;
     while (true) {
       const dateStr = current.toISOString().split("T")[0];
       if (dates.has(dateStr)) {

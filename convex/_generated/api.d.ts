@@ -17,6 +17,7 @@ import type * as demoUser from "../demoUser.js";
 import type * as healthEntries from "../healthEntries.js";
 import type * as http from "../http.js";
 import type * as nudges from "../nudges.js";
+import type * as seedDemoData from "../seedDemoData.js";
 import type * as users from "../users.js";
 
 import type {
@@ -35,6 +36,7 @@ declare const fullApi: ApiFromModules<{
   healthEntries: typeof healthEntries;
   http: typeof http;
   nudges: typeof nudges;
+  seedDemoData: typeof seedDemoData;
   users: typeof users;
 }>;
 

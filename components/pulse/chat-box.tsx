@@ -45,7 +45,7 @@ export function ChatBox({
   // Convex hooks
   const getChatResponse = useAction(api.ai.getChatResponse);
   const saveMessage = useMutation(api.chat.save);
-  const convexHistory = useQuery(api.healthEntries.getHistory, { limit: 7 });
+  const convexHistory = useQuery(api.healthEntries.getHistory, { limit: 14 });
   const convexProfile = useQuery(api.users.getProfile);
   const chatHistory = useQuery(api.chat.list, { limit: 50 });
 
