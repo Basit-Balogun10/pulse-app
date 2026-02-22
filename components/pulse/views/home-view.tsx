@@ -8,6 +8,7 @@ import { amaraFullStory } from '@/lib/amara-story-data';
 import { DayCarousel } from '@/components/pulse/day-carousel';
 import { AnalysisModal, generateInsight } from '@/components/pulse/analysis-modal';
 import { DetailedAnalysisModal } from '@/components/pulse/detailed-analysis-modal';
+import { DetailedMetricsModal } from '@/components/pulse/detailed-metrics-modal';
 import { weatherSummary, getWeatherContext } from '@/lib/weather';
 import { useNudgeTracking } from '@/hooks/use-nudge-tracking';
 import { Badge } from '@/components/ui/badge';
@@ -37,6 +38,7 @@ export function HomeView({ onChatOpen, onStartCheckIn, todayEntry }: HomeViewPro
   const [subheading, setSubheading] = useState(SUBHEADINGS[0]);
   const [showAnalysisModal, setShowAnalysisModal] = useState(false);
   const [showDetailedModal, setShowDetailedModal] = useState(false);
+  const [showDetailedMetrics, setShowDetailedMetrics] = useState(false);
   
   const { nudgeCount, shouldAutoBook, shouldShowNudge } = useNudgeTracking();
 
@@ -199,9 +201,21 @@ export function HomeView({ onChatOpen, onStartCheckIn, todayEntry }: HomeViewPro
             variants={item(3)} initial="hidden" animate="visible"
             className="bg-card rounded-3xl p-5 border border-border"
           >
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
-              {hasTodayEntry ? "Today's Check-in" : isToday ? "Today's Data" : selectedDate}
-            </p>
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                {hasTodayEntry ? "Today's Check-in" : isToday ? "Today's Data" : selectedDate}
+              </p>
+              {(hasTodayEntry || selectedEntry) && (
+                <motion.button
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => setShowDetailedMetrics(true)}
+                  className="flex items-center gap-1 text-xs font-semibold text-[#84CC16] hover:text-[#84CC16]/80 transition-colors"
+                >
+                  See More
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </motion.button>
+              )}
+            </div>
 
             {hasTodayEntry ? (
               <div className="grid grid-cols-2 gap-3">
@@ -259,6 +273,14 @@ export function HomeView({ onChatOpen, onStartCheckIn, todayEntry }: HomeViewPro
         isOpen={showDetailedModal}
         onClose={() => setShowDetailedModal(false)}
         analysis={amaraDay15DetailedAnalysis}
+      />
+
+      {/* Detailed Metrics Modal */}
+      <DetailedMetricsModal
+        isOpen={showDetailedMetrics}
+        onClose={() => setShowDetailedMetrics(false)}
+        entry={selectedEntry}
+        fullHistory={amaraFullStory}
       />
     </div>
   );

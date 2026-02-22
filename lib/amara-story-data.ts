@@ -1,6 +1,8 @@
-// Amara's complete health story - 16 days of check-in data showing progressive health decline
-// This data tells a coherent narrative that leads to the AI recommending a checkup on Day 15
-// Dates are generated dynamically: today (Day 16) and the previous 15 days
+// Amara's complete health story - 60 days of check-in data
+// Days 1-44: Healthy baseline period (user signed up ~2 months ago)
+// Days 45-59: Progressive health decline showing concerning patterns
+// Day 60 (today): Pending check-in
+// This data tells a coherent narrative that leads to the AI recommending a checkup on Day 59
 
 import { getTodayDate, getDateDaysAgo } from './utils';
 
@@ -42,10 +44,60 @@ export interface CheckInEntry {
   hasCheckedIn?: boolean;
 }
 
-// Days 1-3: Normal baseline
-export const amaraDay1: CheckInEntry = {
+// Helper function to generate healthy baseline days
+function generateHealthyDay(daysAgo: number, dayNumber: number): CheckInEntry {
+  const energyVariations = [4, 5, 4, 5, 4];
+  const sleepHours = [7, 7.5, 8, 7.5, 8];
+  const qualities: Array<'great' | 'good'> = ['good', 'great', 'great', 'good', 'great'];
+  const moods: Array<'positive' | 'neutral'> = ['positive', 'positive', 'neutral', 'positive', 'positive'];
+  const appetites: Array<'great' | 'good'> = ['great', 'good', 'great', 'good', 'great'];
+  const exercises = [true, false, true, true, false];
+  const meditations = [false, true, false, true, false];
+  const socials: Array<'active' | 'moderate'> = ['active', 'active', 'moderate', 'active', 'moderate'];
+  
+  const index = dayNumber % 5;
+  
+  return {
+    date: getDateDaysAgo(daysAgo),
+    dayNumber,
+    energy: energyVariations[index],
+    sleep: {
+      hours: sleepHours[index],
+      quality: qualities[index],
+    },
+    symptoms: [],
+    respiratory: false,
+    temperature: {
+      hasFever: false,
+    },
+    mood: moods[index],
+    appetite: appetites[index],
+    lifestyle: {
+      water: true,
+      exercise: exercises[index],
+      meditation: meditations[index],
+      screenTime: 'normal',
+      social: socials[index],
+    },
+    aiAnalysis: {
+      summary: dayNumber % 3 === 0 
+        ? "Excellent check-in! All indicators are in healthy ranges. You're maintaining good habits and consistency." 
+        : "Great day! Your wellness metrics look solid. Keep up the good work with your daily check-ins.",
+      concern_level: 'none',
+      patterns_detected: ['Healthy baseline maintained'],
+    },
+  };
+}
+
+// Generate 44 healthy baseline days (Days 1-44: ~6 weeks of healthy baseline)
+const healthyBaselineDays: CheckInEntry[] = Array.from({ length: 44 }, (_, i) => 
+  generateHealthyDay(59 - i, i + 1)
+);
+
+// Days 45-47: Normal baseline (start of the critical 15-day period)
+export const amaraDay45: CheckInEntry = {
   date: getDateDaysAgo(15), // 15 days ago
-  dayNumber: 1,
+  dayNumber: 45,
   energy: 4,
   sleep: {
     hours: 7.5,
@@ -74,7 +126,7 @@ export const amaraDay1: CheckInEntry = {
 
 export const amaraDay2: CheckInEntry = {
   date: getDateDaysAgo(14), // 14 days ago
-  dayNumber: 2,
+  dayNumber: 46,
   energy: 4,
   sleep: {
     hours: 8,
@@ -104,7 +156,7 @@ export const amaraDay2: CheckInEntry = {
 
 export const amaraDay3: CheckInEntry = {
   date: getDateDaysAgo(13), // 13 days ago
-  dayNumber: 3,
+  dayNumber: 47,
   energy: 4,
   sleep: {
     hours: 7,
@@ -134,7 +186,7 @@ export const amaraDay3: CheckInEntry = {
 // Days 4-7: Mild decline begins
 export const amaraDay4: CheckInEntry = {
   date: getDateDaysAgo(12), // 12 days ago
-  dayNumber: 4,
+  dayNumber: 48,
   energy: 3,
   sleep: {
     hours: 6.5,
@@ -169,7 +221,7 @@ export const amaraDay4: CheckInEntry = {
 
 export const amaraDay5: CheckInEntry = {
   date: getDateDaysAgo(11), // 11 days ago
-  dayNumber: 5,
+  dayNumber: 49,
   energy: 3,
   sleep: {
     hours: 6,
@@ -198,7 +250,7 @@ export const amaraDay5: CheckInEntry = {
 
 export const amaraDay6: CheckInEntry = {
   date: getDateDaysAgo(10), // 10 days ago
-  dayNumber: 6,
+  dayNumber: 50,
   energy: 3,
   sleep: {
     hours: 7,
@@ -233,7 +285,7 @@ export const amaraDay6: CheckInEntry = {
 
 export const amaraDay7: CheckInEntry = {
   date: getDateDaysAgo(9), // 9 days ago
-  dayNumber: 7,
+  dayNumber: 51,
   energy: 3,
   sleep: {
     hours: 6.5,
@@ -263,7 +315,7 @@ export const amaraDay7: CheckInEntry = {
 // Days 8-11: Concerning pattern starts
 export const amaraDay8: CheckInEntry = {
   date: getDateDaysAgo(8), // 8 days ago
-  dayNumber: 8,
+  dayNumber: 52,
   energy: 2,
   sleep: {
     hours: 5.5,
@@ -294,7 +346,7 @@ export const amaraDay8: CheckInEntry = {
 
 export const amaraDay9: CheckInEntry = {
   date: getDateDaysAgo(7), // 7 days ago
-  dayNumber: 9,
+  dayNumber: 53,
   energy: 2,
   sleep: {
     hours: 6,
@@ -323,7 +375,7 @@ export const amaraDay9: CheckInEntry = {
 
 export const amaraDay10: CheckInEntry = {
   date: getDateDaysAgo(6), // 6 days ago
-  dayNumber: 10,
+  dayNumber: 54,
   energy: 2,
   sleep: {
     hours: 5,
@@ -360,7 +412,7 @@ export const amaraDay10: CheckInEntry = {
 
 export const amaraDay11: CheckInEntry = {
   date: getDateDaysAgo(5), // 5 days ago
-  dayNumber: 11,
+  dayNumber: 55,
   energy: 2,
   sleep: {
     hours: 5.5,
@@ -390,7 +442,7 @@ export const amaraDay11: CheckInEntry = {
 // Days 12-14: Pattern escalates
 export const amaraDay12: CheckInEntry = {
   date: getDateDaysAgo(4), // 4 days ago
-  dayNumber: 12,
+  dayNumber: 56,
   energy: 2,
   sleep: {
     hours: 4.5,
@@ -427,7 +479,7 @@ export const amaraDay12: CheckInEntry = {
 
 export const amaraDay13: CheckInEntry = {
   date: getDateDaysAgo(3), // 3 days ago
-  dayNumber: 13,
+  dayNumber: 57,
   energy: 2,
   sleep: {
     hours: 4.5,
@@ -456,7 +508,7 @@ export const amaraDay13: CheckInEntry = {
 
 export const amaraDay14: CheckInEntry = {
   date: getDateDaysAgo(2), // 2 days ago
-  dayNumber: 14,
+  dayNumber: 58,
   energy: 2,
   sleep: {
     hours: 4,
@@ -494,7 +546,7 @@ export const amaraDay14: CheckInEntry = {
 // Day 15: Today - Critical escalation
 export const amaraDay15: CheckInEntry = {
   date: getDateDaysAgo(1), // Yesterday
-  dayNumber: 15,
+  dayNumber: 59,
   energy: 2,
   sleep: {
     hours: 4.5,
@@ -540,10 +592,10 @@ export const amaraDay15: CheckInEntry = {
   },
 };
 
-// Day 16: Today (check-in not yet completed)
+// Day 60: Today (check-in not yet completed)
 export const amaraDay16: CheckInEntry = {
   date: getTodayDate(), // Today
-  dayNumber: 16,
+  dayNumber: 60,
   hasCheckedIn: false, // Today's check-in is pending
   energy: 0,
   sleep: {
@@ -572,24 +624,25 @@ export const amaraDay16: CheckInEntry = {
   },
 };
 
-// Export all days as an array for easy access
+// Export all days as an array for easy access (60 days total)
 export const amaraFullStory: CheckInEntry[] = [
-  amaraDay1,
-  amaraDay2,
-  amaraDay3,
-  amaraDay4,
-  amaraDay5,
-  amaraDay6,
-  amaraDay7,
-  amaraDay8,
-  amaraDay9,
-  amaraDay10,
-  amaraDay11,
-  amaraDay12,
-  amaraDay13,
-  amaraDay14,
-  amaraDay15,
-  amaraDay16, // Today
+  ...healthyBaselineDays, // Days 1-44
+  amaraDay45,  // Day 45
+  amaraDay2,   // Day 46
+  amaraDay3,   // Day 47
+  amaraDay4,   // Day 48
+  amaraDay5,   // Day 49
+  amaraDay6,   // Day 50
+  amaraDay7,   // Day 51
+  amaraDay8,   // Day 52
+  amaraDay9,   // Day 53
+  amaraDay10,  // Day 54
+  amaraDay11,  // Day 55
+  amaraDay12,  // Day 56
+  amaraDay13,  // Day 57
+  amaraDay14,  // Day 58
+  amaraDay15,  // Day 59 (yesterday - AI nudge day)
+  amaraDay16,  // Day 60 (today - pending check-in)
 ];
 
 // Amara's health profile
