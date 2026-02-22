@@ -42,6 +42,32 @@ export class DemoRunner {
   }
 
   /**
+   * Helper to find button by text content (avoiding invalid :has-text selector)
+   */
+  private findButtonByText(...texts: string[]): HTMLElement | null {
+    const buttons = Array.from(document.querySelectorAll('button'));
+    return buttons.find(btn => 
+      texts.some(text => btn.textContent?.toLowerCase().includes(text.toLowerCase()))
+    ) as HTMLElement || null;
+  }
+
+  /**
+   * Helper to find element with close button (avoiding :has selector)
+   */
+  private findCloseButton(): HTMLElement | null {
+    const closeButtons = Array.from(document.querySelectorAll('[aria-label="Close"], button[aria-label*="close" i]'));
+    if (closeButtons.length > 0) return closeButtons[0] as HTMLElement;
+    
+    // Fallback: Find button with X or close icon
+    const buttons = Array.from(document.querySelectorAll('button'));
+    return buttons.find(btn => {
+      const hasCloseText = btn.textContent?.includes('×') || btn.textContent?.includes('✕');
+      const hasSvg = btn.querySelector('svg') !== null;
+      return hasCloseText || (hasSvg && btn.children.length === 1);
+    }) as HTMLElement || null;
+  }
+
+  /**
    * Scene 1: User Onboarding [~20 seconds]
    * Show pre-filled Amara's profile and proceed to home
    */
@@ -110,7 +136,11 @@ export class DemoRunner {
     this.log('  Days 12-14: Energy 2/5, Sleep 4-5hrs, Recurring abdomen ache');
     
     // Try to find and click carousel navigation
-    const nextButtons = document.querySelectorAll('[aria-label*="next"], button:has-text("→"), .carousel-next');
+    const nextButtons = Array.from(document.querySelectorAll('button')).filter(btn => 
+      btn.getAttribute('aria-label')?.includes('next') || 
+      btn.textContent?.includes('→') ||
+      btn.classList.contains('carousel-next')
+    );
     if (nextButtons.length > 0) {
       this.log('Found carousel controls, navigating through days...');
       for (let i = 0; i < 6; i++) {
@@ -164,7 +194,7 @@ export class DemoRunner {
           this.log('    - Sleep quality reducing');
           
           // Close modal
-          const closeButton = document.querySelector('[aria-label="Close"], button:has(svg)');
+          const closeButton = this.findCloseButton();
           if (closeButton) {
             (closeButton as HTMLElement).click();
             await this.wait(1000);
@@ -186,7 +216,7 @@ export class DemoRunner {
           await this.wait(3000);
           
           // Close metrics modal
-          const metricsCloseBtn = document.querySelector('[aria-label="Close"], button:has(svg)');
+          const metricsCloseBtn = this.findCloseButton();
           if (metricsCloseBtn) {
             (metricsCloseBtn as HTMLElement).click();
             await this.wait(1000);
@@ -225,7 +255,7 @@ export class DemoRunner {
     
     // Find and click "Complete today's check-in" button
     this.log('Looking for check-in button...');
-    const checkInButton = document.querySelector('button:has-text("check-in"), button:has-text("Check In"), [data-action="check-in"]');
+    const checkInButton = this.findButtonByText('check-in', 'Check In') || document.querySelector('[data-action="check-in"]');
     
     if (checkInButton) {
       this.log('✓ Found check-in button, starting check-in...');
@@ -288,7 +318,7 @@ export class DemoRunner {
     
     // Submit check-in
     this.log('Submitting check-in...');
-    const submitButton = document.querySelector('button[type="submit"], button:has-text("Submit"), button:has-text("Complete")');
+    const submitButton = document.querySelector('button[type="submit"]') || this.findButtonByText('Submit', 'Complete');
     if (submitButton) {
       (submitButton as HTMLElement).click();
       await this.wait(3000);
@@ -323,7 +353,7 @@ export class DemoRunner {
     
     // Find and click AI Analysis card
     this.log('Looking for AI Analysis card...');
-    const aiCard = document.querySelector('[data-testid="ai-analysis-card"], .ai-analysis, button:has-text("AI Analysis")');
+    const aiCard = document.querySelector('[data-testid="ai-analysis-card"], .ai-analysis') || this.findButtonByText('AI Analysis');
     
     if (aiCard) {
       await this.wait(3000); // Show pulsing card
@@ -362,7 +392,7 @@ export class DemoRunner {
     
     // Click "See Detailed Analysis" button
     this.log('Looking for "See Detailed Analysis" button...');
-    const detailButton = document.querySelector('button:has-text("Detailed"), button:has-text("See Detail")');
+    const detailButton = this.findButtonByText('Detailed', 'See Detail', 'View Details');
     
     if (detailButton) {
       this.log('✓ Opening detailed analysis modal...');
@@ -423,7 +453,7 @@ export class DemoRunner {
       
       // Close modal
       this.log('Closing detailed analysis modal...');
-      const closeButton = document.querySelector('[aria-label="Close"], button:has-text("Close")');
+      const closeButton = this.findCloseButton();
       if (closeButton) {
         (closeButton as HTMLElement).click();
         await this.wait(1000);
@@ -447,7 +477,7 @@ export class DemoRunner {
     
     // Click "Book Clinic Visit" button
     this.log('Looking for "Book Clinic Visit" button...');
-    const bookButton = document.querySelector('button:has-text("Book Clinic"), button:has-text("Book")');
+    const bookButton = this.findButtonByText('Book Clinic', 'Book', 'Schedule Appointment');
     
     if (bookButton) {
       this.log('✓ Clicking "Book Clinic Visit"...');
@@ -465,7 +495,11 @@ export class DemoRunner {
       
       // Try to open filter
       this.log('Opening advanced filter sheet...');
-      const filterButton = document.querySelector('[aria-label*="filter"], button:has-text("Filter")');
+      const filterButtons = Array.from(document.querySelectorAll('button')).filter(btn => 
+        btn.getAttribute('aria-label')?.toLowerCase().includes('filter') ||
+        btn.textContent?.includes('Filter')
+      );
+      const filterButton = filterButtons.length > 0 ? filterButtons[0] as HTMLElement : null;
       if (filterButton) {
         (filterButton as HTMLElement).click();
         await this.wait(2000);
@@ -479,7 +513,7 @@ export class DemoRunner {
         await this.wait(2000);
         
         // Apply filters
-        const applyButton = document.querySelector('button:has-text("Apply")');
+        const applyButton = this.findButtonByText('Apply');
         if (applyButton) {
           this.log('Applying filters...');
           (applyButton as HTMLElement).click();
@@ -509,7 +543,7 @@ export class DemoRunner {
         await this.wait(3000);
         
         this.log('Proceeding with booking...');
-        const bookNowButton = document.querySelector('button:has-text("Book"), button:has-text("Schedule")');
+        const bookNowButton = this.findButtonByText('Book', 'Schedule', 'Book Now');
         if (bookNowButton) {
           (bookNowButton as HTMLElement).click();
           await this.wait(2000);
@@ -614,7 +648,7 @@ export class DemoRunner {
     
     // Navigate to Chat tab
     this.log('Navigating to Chat tab...');
-    const chatTab = document.querySelector('[data-tab="chat"], button:has-text("Chat")');
+    const chatTab = document.querySelector('[data-tab="chat"]') || this.findButtonByText('Chat');
     if (chatTab) {
       (chatTab as HTMLElement).click();
       await this.wait(2000);
@@ -631,7 +665,7 @@ export class DemoRunner {
         
         // Send message
         this.log('Sending message...');
-        const sendButton = document.querySelector('button:has-text("Send")');
+        const sendButton = this.findButtonByText('Send');
         if (sendButton) {
           (sendButton as HTMLElement).click();
           await this.wait(1000);
@@ -690,7 +724,7 @@ export class DemoRunner {
     
     // Navigate to Profile tab
     this.log('Navigating to Profile tab...');
-    const profileTab = document.querySelector('[data-tab="profile"], button:has-text("Profile")');
+    const profileTab = document.querySelector('[data-tab="profile"]') || this.findButtonByText('Profile');
     if (profileTab) {
       (profileTab as HTMLElement).click();
       await this.wait(2000);
@@ -732,7 +766,7 @@ export class DemoRunner {
     
     // Navigate to Billing
     this.log('Navigating to Billing section...');
-    const billingTab = document.querySelector('[data-tab="billing"], button:has-text("Billing")');
+    const billingTab = document.querySelector('[data-tab="billing"]') || this.findButtonByText('Billing', 'Subscription');
     if (billingTab) {
       (billingTab as HTMLElement).click();
       await this.wait(2000);
@@ -830,7 +864,7 @@ export class DemoRunner {
     
     // Navigate to Analytics/History
     this.log('Navigating to Analytics/History tab...');
-    const analyticsTab = document.querySelector('[data-tab="analytics"], [data-tab="history"], button:has-text("History")');
+    const analyticsTab = document.querySelector('[data-tab="analytics"], [data-tab="history"]') || this.findButtonByText('History', 'Analytics', 'Trends');
     if (analyticsTab) {
       (analyticsTab as HTMLElement).click();
       await this.wait(2000);
@@ -886,7 +920,7 @@ export class DemoRunner {
     
     // Navigate back to home
     this.log('Returning to home screen...');
-    const homeTab = document.querySelector('[data-tab="home"], button:has-text("Home")');
+    const homeTab = document.querySelector('[data-tab="home"]') || this.findButtonByText('Home');
     if (homeTab) {
       (homeTab as HTMLElement).click();
       await this.wait(2000);
@@ -939,7 +973,7 @@ export class DemoRunner {
    */
   private async fillCard(cardType: string, value: string | number): Promise<void> {
     // Find next button to navigate between cards
-    const nextButton = document.querySelector('button:has-text("Next"), button:has-text("Continue")');
+    const nextButton = this.findButtonByText('Next', 'Continue');
     
     // Simulate filling the card
     await this.wait(1500);
