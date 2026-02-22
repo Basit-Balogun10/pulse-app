@@ -22,6 +22,7 @@ export default defineSchema({
     smokingStatus: v.optional(v.string()),
     alcoholUse: v.optional(v.string()),
     lastCheckup: v.optional(v.string()),
+    subscriptionTier: v.optional(v.string()), // Starter, Regular, Committed, Champion
   }).index("by_user", ["userId"]),
 
   healthEntries: defineTable({

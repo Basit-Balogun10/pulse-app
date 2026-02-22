@@ -58,6 +58,7 @@ export const updateProfile = mutation({
     smokingStatus: v.optional(v.string()),
     alcoholUse: v.optional(v.string()),
     lastCheckup: v.optional(v.string()),
+    subscriptionTier: v.optional(v.string()),
   },
   async handler(ctx, args) {
     // Auth disabled - using demo user

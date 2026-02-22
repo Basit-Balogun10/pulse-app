@@ -470,6 +470,7 @@ export const seedDemoProfile = mutation({
       smokingStatus: "Non-smoker",
       alcoholUse: "Occasional",
       lastCheckup: "2024-12-21",
+      subscriptionTier: "Regular", // For streak discount calculation
     });
 
     console.log("✅ Demo profile created");
