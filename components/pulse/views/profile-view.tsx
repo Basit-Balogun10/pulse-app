@@ -230,6 +230,8 @@ export function ProfileView() {
   const [editForm, setEditForm] = useState<ProfileData>(EMPTY);
   const [isEditing, setIsEditing] = useState(false);
   const [showBilling, setShowBilling] = useState(false);
+  const [showMedications, setShowMedications] = useState(false);
+  const [showHealthCircles, setShowHealthCircles] = useState(false);
   const tier = getTierInfo(userProfile.streak);
 
   useEffect(() => {
@@ -410,8 +412,8 @@ export function ProfileView() {
                 <p className="text-sm font-bold text-foreground">Account</p>
               </div>
               <div className="px-2 py-1">
-                <SettingsRow icon={Pill}         label="Medications & Allergies" sublabel="Manage your health list" />
-                <SettingsRow icon={Users}        label="Health Circles"          sublabel="Share streaks with friends" />
+                <SettingsRow icon={Pill}         label="Medications & Allergies" sublabel="Manage your health list" onPress={() => setShowMedications(true)} />
+                <SettingsRow icon={Users}        label="Health Circles"          sublabel="Share streaks with friends" onPress={() => setShowHealthCircles(true)} />
                 <SettingsRow icon={Bell}         label="Notifications"           sublabel="Reminders & alerts" />
                 <SettingsRow icon={Shield}       label="Privacy & Data"          sublabel="Control your health data" />
                 <SettingsRow icon={AlertCircle}  label="Emergency Contact"       sublabel="Set your emergency contact" />
@@ -442,6 +444,146 @@ export function ProfileView() {
             onClose={() => setIsEditing(false)}
             onSave={handleSave}
           />
+        )}
+      </AnimatePresence>
+
+      {/* Medications & Allergies Modal */}
+      <AnimatePresence>
+        {showMedications && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4"
+            onClick={() => setShowMedications(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-background rounded-3xl overflow-hidden w-full max-w-md max-h-[80vh] flex flex-col"
+            >
+              <div className="px-6 py-4 border-b border-border flex items-center justify-between shrink-0">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-[#84CC16]/10 flex items-center justify-center">
+                    <Pill className="w-5 h-5 text-[#84CC16]" />
+                  </div>
+                  <h3 className="text-lg font-bold text-foreground">Medications & Allergies</h3>
+                </div>
+                <motion.button
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => setShowMedications(false)}
+                  className="w-9 h-9 rounded-full bg-muted flex items-center justify-center"
+                >
+                  <X className="w-5 h-5 text-foreground" />
+                </motion.button>
+              </div>
+              <div className="flex-1 overflow-y-auto p-6 space-y-4">
+                <div className="bg-muted rounded-2xl p-4">
+                  <p className="text-xs text-muted-foreground font-semibold mb-2">Current Medications</p>
+                  <p className="text-sm text-foreground">{profile.currentMedications || 'None listed'}</p>
+                </div>
+                <div className="bg-muted rounded-2xl p-4">
+                  <p className="text-xs text-muted-foreground font-semibold mb-2">Allergies</p>
+                  <p className="text-sm text-foreground">{profile.allergies || 'None listed'}</p>
+                </div>
+                <div className="bg-[#EF4444]/10 border border-[#EF4444]/30 rounded-2xl p-4">
+                  <p className="text-xs text-[#EF4444] font-semibold mb-2">⚠️ Important</p>
+                  <p className="text-sm text-foreground">Always inform healthcare providers about your medications and allergies before treatment.</p>
+                </div>
+                <motion.button
+                  whileTap={{ scale: 0.97 }}
+                  onClick={() => {
+                    setShowMedications(false);
+                    setIsEditing(true);
+                  }}
+                  className="w-full py-3 rounded-2xl bg-[#84CC16] text-white font-bold text-sm hover:bg-[#84CC16]/90 transition-colors"
+                >
+                  Edit in Profile
+                </motion.button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Health Circles Modal */}
+      <AnimatePresence>
+        {showHealthCircles && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4"
+            onClick={() => setShowHealthCircles(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-background rounded-3xl overflow-hidden w-full max-w-md max-h-[80vh] flex flex-col"
+            >
+              <div className="px-6 py-4 border-b border-border flex items-center justify-between shrink-0">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-[#84CC16]/10 flex items-center justify-center">
+                    <Users className="w-5 h-5 text-[#84CC16]" />
+                  </div>
+                  <h3 className="text-lg font-bold text-foreground">Health Circles</h3>
+                </div>
+                <motion.button
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => setShowHealthCircles(false)}
+                  className="w-9 h-9 rounded-full bg-muted flex items-center justify-center"
+                >
+                  <X className="w-5 h-5 text-foreground" />
+                </motion.button>
+              </div>
+              <div className="flex-1 overflow-y-auto p-6 space-y-4">
+                <p className="text-sm text-muted-foreground">
+                  Create or join health circles to share your wellness journey, motivate each other, and build healthy habits together!
+                </p>
+                
+                {/* Mock circles */}
+                <div className="space-y-3">
+                  {[
+                    { name: 'Family Support', members: 4, streak: '28 days', color: '#84CC16' },
+                    { name: 'Gym Buddies', members: 8, streak: '14 days', color: '#14B8A6' },
+                  ].map((circle, i) => (
+                    <div key={i} className="bg-card border border-border rounded-2xl p-4">
+                      <div className="flex items-center gap-3 mb-2">
+                        <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ backgroundColor: `${circle.color}20` }}>
+                          <Users className="w-5 h-5" style={{ color: circle.color }} />
+                        </div>
+                        <div className="flex-1">
+                          <p className="font-bold text-foreground">{circle.name}</p>
+                          <p className="text-xs text-muted-foreground">{circle.members} members</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm font-bold" style={{ color: circle.color }}>{circle.streak}</p>
+                          <p className="text-xs text-muted-foreground">Avg streak</p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <motion.button
+                  whileTap={{ scale: 0.97 }}
+                  className="w-full py-3 rounded-2xl bg-[#84CC16] text-white font-bold text-sm hover:bg-[#84CC16]/90 transition-colors"
+                >
+                  + Create New Circle
+                </motion.button>
+
+                <div className="bg-muted rounded-2xl p-4">
+                  <p className="text-xs text-muted-foreground text-center">
+                    Share your streaks, check-in patterns, and milestones to inspire each other. Privacy settings available.
+                  </p>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
         )}
       </AnimatePresence>
     </>
