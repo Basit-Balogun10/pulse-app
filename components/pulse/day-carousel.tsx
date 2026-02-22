@@ -5,37 +5,33 @@ import { motion } from 'framer-motion';
 import { Calendar } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
-import { DateTimePicker } from '@/components/ui/date-time-picker';
-import { amaraFullStory } from '@/lib/amara-story-data';
-import { getTodayDate } from '@/lib/utils';
+
+const TODAY_STR = new Date().toISOString().split('T')[0]; // real YYYY-MM-DD
 
 interface DayCarouselProps {
   onDaySelect: (date: string) => void;
   selectedDate: string;
-  missedDays?: string[];
+  /** Dates that have a completed check-in — shown as coloured pills */
+  checkedInDates?: string[];
 }
 
-// Today is calculated dynamically
-const TODAY_STR = getTodayDate();
-
-export function DayCarousel({ onDaySelect, selectedDate, missedDays = [] }: DayCarouselProps) {
+export function DayCarousel({ onDaySelect, selectedDate, checkedInDates = [] }: DayCarouselProps) {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [days, setDays] = useState<Array<{ date: string; label: string }>>([]);
 
   useEffect(() => {
-    // Show all 60 days from Amara's story
+    // Generate last 14 real calendar days (oldest → newest)
     const daysList = [];
-    const totalDays = amaraFullStory.length;
-    
-    for (let i = 0; i < totalDays; i++) {
-      const entry = amaraFullStory[i];
-      const date = new Date(entry.date);
-      const day = date.getDate();
-      const month = date.getMonth() + 1;
-      daysList.push({ date: entry.date, label: `${day}/${month}` });
+    for (let i = 13; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      const dateStr = d.toISOString().split('T')[0];
+      const day = d.getDate();
+      const month = d.getMonth() + 1;
+      daysList.push({ date: dateStr, label: `${day}/${month}` });
     }
-    
     setDays(daysList);
+    // Scroll to end (today) on mount
     setTimeout(() => {
       if (scrollContainerRef.current) {
         scrollContainerRef.current.scrollLeft = scrollContainerRef.current.scrollWidth;
@@ -43,13 +39,16 @@ export function DayCarousel({ onDaySelect, selectedDate, missedDays = [] }: DayC
     }, 100);
   }, []);
 
-  const isMissed = (date: string) => missedDays.includes(date);
+  const hasEntry = (date: string) => checkedInDates.includes(date);
   const isToday = (date: string) => date === TODAY_STR;
+  // A past date without a check-in is "missed"
+  const isMissed = (date: string) => !hasEntry(date) && !isToday(date) && date < TODAY_STR;
 
   const getPillColors = (date: string) => {
     if (isToday(date)) return { top: '#84CC16', bottom: '#F97316' };
     if (isMissed(date)) return { top: '#6b7280', bottom: '#9ca3af' };
-    const idx = days.findIndex((d) => d.date === date);
+    // Checked-in past days get rotating colourful pairs
+    const idx = checkedInDates.indexOf(date);
     const pairs = [
       { top: '#14B8A6', bottom: '#84CC16' },
       { top: '#F97316', bottom: '#EC4899' },
@@ -57,7 +56,7 @@ export function DayCarousel({ onDaySelect, selectedDate, missedDays = [] }: DayC
       { top: '#EC4899', bottom: '#F97316' },
       { top: '#84CC16', bottom: '#14B8A6' },
     ];
-    return pairs[idx % pairs.length];
+    return pairs[Math.abs(idx) % pairs.length];
   };
 
   const handleDateJump = (date: Date) => {
@@ -79,10 +78,11 @@ export function DayCarousel({ onDaySelect, selectedDate, missedDays = [] }: DayC
         </PopoverTrigger>
         <PopoverContent className="w-auto p-0" align="start">
           <div className="p-4">
-            <DateTimePicker
-              value={selectedDate}
-              onChange={(val) => handleDateJump(new Date(val))}
-              placeholder="Jump to date"
+            <input
+              type="date"
+              max={TODAY_STR}
+              onChange={(e) => handleDateJump(new Date(e.target.value))}
+              className="px-3 py-2 rounded-lg border-2 border-border bg-background text-foreground focus:outline-none focus:border-primary"
             />
           </div>
         </PopoverContent>
@@ -102,15 +102,14 @@ export function DayCarousel({ onDaySelect, selectedDate, missedDays = [] }: DayC
           return (
             <motion.button
               key={day.date}
-              data-date={day.date}
               onClick={() => onDaySelect(day.date)}
               whileTap={{ scale: 0.9 }}
-              className={`shrink-0 flex flex-col items-center gap-1.5 py-2.5 px-3.5 rounded-xl transition-all ${
+              className={`shrink-0 flex flex-col items-center gap-1.5 py-2 px-3 rounded-xl transition-all ${
                 isSelected ? 'bg-primary/10 ring-2 ring-primary/40' : 'hover:bg-muted/50'
-              } ${today ? 'ring-2 ring-[#84CC16]/40 ring-inset' : ''}`}
+              }`}
             >
               {/* Diagonal capsule pill */}
-              <div className="w-9 h-9 flex items-center justify-center relative overflow-visible">
+              <div className="w-9 h-9 flex items-center justify-center">
                 <div
                   style={{
                     width: '36px',

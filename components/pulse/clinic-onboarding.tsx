@@ -154,7 +154,7 @@ export function ClinicOnboarding({ onComplete, onSkip }: ClinicOnboardingProps) 
           ))}
         </div>
         <div className="mt-3 flex items-center gap-2">
-          <STEPS[currentStep - 1].icon className="w-5 h-5 text-[#84CC16]" />
+          {(() => { const StepIcon = STEPS[currentStep - 1].icon; return <StepIcon className="w-5 h-5 text-[#84CC16]" />; })()}
           <p className="text-sm font-semibold text-foreground">{STEPS[currentStep - 1].title}</p>
         </div>
       </div>

@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, Check, ChevronRight } from 'lucide-react';
+import { useMutation } from 'convex/react';
+import { api } from '@/convex/_generated/api';
 import { EnergyCard } from '@/components/pulse/checkin/energy-card';
 import { SleepCard } from '@/components/pulse/checkin/sleep-card';
 import { SymptomsCard } from '@/components/pulse/checkin/symptoms-card';
@@ -38,6 +40,7 @@ export function CheckInView({ onComplete }: CheckInViewProps) {
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
   
   const { shouldShowNudge, incrementNudge, resetNudges, dismissNudge } = useNudgeTracking();
+  const bookAppointment = useMutation(api.appointments.book);
 
   // Show feedback modal when check-in starts if there's an active nudge
   useEffect(() => {
@@ -155,21 +158,35 @@ export function CheckInView({ onComplete }: CheckInViewProps) {
         isOpen={showFeedbackModal}
         onClose={() => setShowFeedbackModal(false)}
         onYesBooked={() => {
-          console.log('User booked appointment');
+          // Record the self-booked appointment in Convex + dismiss nudge
+          bookAppointment({
+            clinicId: 'self-booked',
+            clinicName: 'External Clinic',
+            specialty: 'General Practice',
+          }).catch(console.error);
+          dismissNudge();
+          setShowFeedbackModal(false);
         }}
         onYesWent={(reportFile) => {
-          console.log('User went to checkup', reportFile);
           const today = new Date().toISOString().split('T')[0];
+          // Record as a completed appointment in Convex
+          bookAppointment({
+            clinicId: 'self-completed',
+            clinicName: 'External Clinic',
+            specialty: 'General Practice',
+            status: 'completed',
+          }).catch(console.error);
           resetNudges(today);
+          setShowFeedbackModal(false);
         }}
         onNoDidntGo={() => {
-          console.log('User did not go');
           const today = new Date().toISOString().split('T')[0];
           incrementNudge(today);
+          setShowFeedbackModal(false);
         }}
         onRemindLater={() => {
-          console.log('User clicked remind later');
           dismissNudge();
+          setShowFeedbackModal(false);
         }}
       />
     </div>

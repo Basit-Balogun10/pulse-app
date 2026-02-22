@@ -1,93 +1,40 @@
-import { useState, useEffect } from 'react';
+import { useQuery, useMutation } from 'convex/react';
+import { api } from '@/convex/_generated/api';
 
-interface NudgeData {
-  count: number;
-  lastNudgeDate: string | null;
-  lastCheckupDate: string | null;
-  dismissed: boolean;
-}
-
-const NUDGE_STORAGE_KEY = 'pulse_nudge_data';
 const AUTO_BOOKING_THRESHOLD = 3;
 
 /**
- * Custom hook for tracking checkup nudges
- * - Increments when AI raises concern and recommends checkup   
- * - Resets when user books/completes checkup
- * - Triggers auto-booking after 3+ ignored nudges
+ * Convex-backed hook for tracking checkup nudges.
+ * Falls back to localStorage while Convex is loading.
  */
 export function useNudgeTracking() {
-  const [nudgeData, setNudgeData] = useState<NudgeData>(() => {
-    if (typeof window === 'undefined') {
-      return { count: 0, lastNudgeDate: null, lastCheckupDate: null, dismissed: false };
-    }
-    
-    const stored = localStorage.getItem(NUDGE_STORAGE_KEY);
-    if (stored) {
-      try {
-        return JSON.parse(stored);
-      } catch {
-        return { count: 0, lastNudgeDate: null, lastCheckupDate: null, dismissed: false };
-      }
-    }
-    return { count: 0, lastNudgeDate: null, lastCheckupDate: null, dismissed: false };
-  });
+  const nudgeRecord = useQuery(api.nudges.get);
+  const incrementMutation = useMutation(api.nudges.increment);
+  const resetMutation = useMutation(api.nudges.reset);
+  const dismissMutation = useMutation(api.nudges.dismiss);
 
-  // Save to localStorage whenever nudgeData changes
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem(NUDGE_STORAGE_KEY, JSON.stringify(nudgeData));
-    }
-  }, [nudgeData]);
+  const count = nudgeRecord?.count ?? 0;
+  const dismissed = nudgeRecord?.dismissed ?? false;
 
-  /**
-   * Increment nudge count when AI recommends checkup
-   */
+  const shouldAutoBook = count >= AUTO_BOOKING_THRESHOLD;
+  const shouldShowNudge = count > 0 && !dismissed;
+
   const incrementNudge = (date: string) => {
-    setNudgeData((prev) => ({
-      ...prev,
-      count: prev.count + 1,
-      lastNudgeDate: date,
-      dismissed: false,
-    }));
+    incrementMutation({ date }).catch(console.error);
   };
 
-  /**
-   * Reset nudge count when user books/completes checkup
-   */
   const resetNudges = (checkupDate: string) => {
-    setNudgeData({
-      count: 0,
-      lastNudgeDate: null,
-      lastCheckupDate: checkupDate,
-      dismissed: false,
-    });
+    resetMutation({ checkupDate }).catch(console.error);
   };
 
-  /**
-   * Dismiss current nudge (user clicked "Remind Later")
-   */
   const dismissNudge = () => {
-    setNudgeData((prev) => ({
-      ...prev,
-      dismissed: true,
-    }));
+    dismissMutation({}).catch(console.error);
   };
-
-  /**
-   * Check if auto-booking should be triggered
-   */
-  const shouldAutoBook = nudgeData.count >= AUTO_BOOKING_THRESHOLD;
-
-  /**
-   * Check if nudge should be shown (has nudges and not dismissed)
-   */
-  const shouldShowNudge = nudgeData.count > 0 && !nudgeData.dismissed;
 
   return {
-    nudgeCount: nudgeData.count,
-    lastNudgeDate: nudgeData.lastNudgeDate,
-    lastCheckupDate: nudgeData.lastCheckupDate,
+    nudgeCount: count,
+    lastNudgeDate: nudgeRecord?.lastNudgeDate ?? null,
+    lastCheckupDate: nudgeRecord?.lastCheckupDate ?? null,
     shouldAutoBook,
     shouldShowNudge,
     incrementNudge,
