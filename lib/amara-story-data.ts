@@ -1,5 +1,8 @@
-// Amara's complete health story - 14 days of check-in data showing progressive health decline
+// Amara's complete health story - 16 days of check-in data showing progressive health decline
 // This data tells a coherent narrative that leads to the AI recommending a checkup on Day 15
+// Dates are generated dynamically: today (Day 16) and the previous 15 days
+
+import { getTodayDate, getDateDaysAgo } from './utils';
 
 export interface CheckInEntry {
   date: string;
@@ -36,11 +39,12 @@ export interface CheckInEntry {
     patterns_detected: string[];
     recommendation?: string;
   };
+  hasCheckedIn?: boolean;
 }
 
 // Days 1-3: Normal baseline
 export const amaraDay1: CheckInEntry = {
-  date: '2026-02-07',
+  date: getDateDaysAgo(15), // 15 days ago
   dayNumber: 1,
   energy: 4,
   sleep: {
@@ -69,7 +73,7 @@ export const amaraDay1: CheckInEntry = {
 };
 
 export const amaraDay2: CheckInEntry = {
-  date: '2026-02-08',
+  date: getDateDaysAgo(14), // 14 days ago
   dayNumber: 2,
   energy: 4,
   sleep: {
@@ -99,7 +103,7 @@ export const amaraDay2: CheckInEntry = {
 };
 
 export const amaraDay3: CheckInEntry = {
-  date: '2026-02-09',
+  date: getDateDaysAgo(13), // 13 days ago
   dayNumber: 3,
   energy: 4,
   sleep: {
@@ -129,7 +133,7 @@ export const amaraDay3: CheckInEntry = {
 
 // Days 4-7: Mild decline begins
 export const amaraDay4: CheckInEntry = {
-  date: '2026-02-10',
+  date: getDateDaysAgo(12), // 12 days ago
   dayNumber: 4,
   energy: 3,
   sleep: {
@@ -164,7 +168,7 @@ export const amaraDay4: CheckInEntry = {
 };
 
 export const amaraDay5: CheckInEntry = {
-  date: '2026-02-11',
+  date: getDateDaysAgo(11), // 11 days ago
   dayNumber: 5,
   energy: 3,
   sleep: {
@@ -193,7 +197,7 @@ export const amaraDay5: CheckInEntry = {
 };
 
 export const amaraDay6: CheckInEntry = {
-  date: '2026-02-12',
+  date: getDateDaysAgo(10), // 10 days ago
   dayNumber: 6,
   energy: 3,
   sleep: {
@@ -228,7 +232,7 @@ export const amaraDay6: CheckInEntry = {
 };
 
 export const amaraDay7: CheckInEntry = {
-  date: '2026-02-13',
+  date: getDateDaysAgo(9), // 9 days ago
   dayNumber: 7,
   energy: 3,
   sleep: {
@@ -258,7 +262,7 @@ export const amaraDay7: CheckInEntry = {
 
 // Days 8-11: Concerning pattern starts
 export const amaraDay8: CheckInEntry = {
-  date: '2026-02-14',
+  date: getDateDaysAgo(8), // 8 days ago
   dayNumber: 8,
   energy: 2,
   sleep: {
@@ -289,7 +293,7 @@ export const amaraDay8: CheckInEntry = {
 };
 
 export const amaraDay9: CheckInEntry = {
-  date: '2026-02-15',
+  date: getDateDaysAgo(7), // 7 days ago
   dayNumber: 9,
   energy: 2,
   sleep: {
@@ -318,7 +322,7 @@ export const amaraDay9: CheckInEntry = {
 };
 
 export const amaraDay10: CheckInEntry = {
-  date: '2026-02-16',
+  date: getDateDaysAgo(6), // 6 days ago
   dayNumber: 10,
   energy: 2,
   sleep: {
@@ -355,7 +359,7 @@ export const amaraDay10: CheckInEntry = {
 };
 
 export const amaraDay11: CheckInEntry = {
-  date: '2026-02-17',
+  date: getDateDaysAgo(5), // 5 days ago
   dayNumber: 11,
   energy: 2,
   sleep: {
@@ -385,7 +389,7 @@ export const amaraDay11: CheckInEntry = {
 
 // Days 12-14: Pattern escalates
 export const amaraDay12: CheckInEntry = {
-  date: '2026-02-18',
+  date: getDateDaysAgo(4), // 4 days ago
   dayNumber: 12,
   energy: 2,
   sleep: {
@@ -422,7 +426,7 @@ export const amaraDay12: CheckInEntry = {
 };
 
 export const amaraDay13: CheckInEntry = {
-  date: '2026-02-19',
+  date: getDateDaysAgo(3), // 3 days ago
   dayNumber: 13,
   energy: 2,
   sleep: {
@@ -451,7 +455,7 @@ export const amaraDay13: CheckInEntry = {
 };
 
 export const amaraDay14: CheckInEntry = {
-  date: '2026-02-20',
+  date: getDateDaysAgo(2), // 2 days ago
   dayNumber: 14,
   energy: 2,
   sleep: {
@@ -489,7 +493,7 @@ export const amaraDay14: CheckInEntry = {
 
 // Day 15: Today - Critical escalation
 export const amaraDay15: CheckInEntry = {
-  date: '2026-02-21',
+  date: getDateDaysAgo(1), // Yesterday
   dayNumber: 15,
   energy: 2,
   sleep: {
@@ -536,15 +540,15 @@ export const amaraDay15: CheckInEntry = {
   },
 };
 
-// Day 16: Today - February 22, 2026 (check-in not yet completed)
+// Day 16: Today (check-in not yet completed)
 export const amaraDay16: CheckInEntry = {
-  date: '2026-02-22',
+  date: getTodayDate(), // Today
   dayNumber: 16,
   hasCheckedIn: false, // Today's check-in is pending
   energy: 0,
   sleep: {
     hours: 0,
-    quality: 'unknown',
+    quality: 'okay', // Placeholder value
   },
   symptoms: [],
   respiratory: false,
@@ -553,13 +557,18 @@ export const amaraDay16: CheckInEntry = {
     value: 0,
   },
   mood: 'neutral',
-  appetite: 'unknown',
+  appetite: 'good', // Placeholder value
   lifestyle: {
     water: false,
     exercise: false,
     meditation: false,
-    screenTime: 'unknown',
-    social: 'unknown',
+    screenTime: 'normal', // Placeholder value
+    social: 'moderate', // Placeholder value
+  },
+  aiAnalysis: {
+    summary: 'No check-in data yet for today.',
+    concern_level: 'none',
+    patterns_detected: [],
   },
 };
 
@@ -696,7 +705,7 @@ export interface NudgeRecord {
 export const amaraNudges: NudgeRecord[] = [
   {
     id: 'nudge-1',
-    date: '2026-02-21',
+    date: getDateDaysAgo(1), // Yesterday (Day 15)
     analysisId: 'day-15-analysis',
     userResponse: 'ignored', // This would be updated based on user action
   },

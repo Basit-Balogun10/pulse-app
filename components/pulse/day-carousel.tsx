@@ -6,6 +6,7 @@ import { Calendar } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
 import { amaraFullStory } from '@/lib/amara-story-data';
+import { getTodayDate } from '@/lib/utils';
 
 interface DayCarouselProps {
   onDaySelect: (date: string) => void;
@@ -13,8 +14,8 @@ interface DayCarouselProps {
   missedDays?: string[];
 }
 
-// Today is February 22, 2026
-const TODAY_STR = '2026-02-22';
+// Today is calculated dynamically
+const TODAY_STR = getTodayDate();
 
 export function DayCarousel({ onDaySelect, selectedDate, missedDays = [] }: DayCarouselProps) {
   const scrollContainerRef = useRef<HTMLDivElement>(null);

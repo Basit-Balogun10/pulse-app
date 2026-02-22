@@ -12,9 +12,10 @@ import { weatherSummary, getWeatherContext } from '@/lib/weather';
 import { useNudgeTracking } from '@/hooks/use-nudge-tracking';
 import { Badge } from '@/components/ui/badge';
 import { amaraDay15DetailedAnalysis } from '@/lib/amara-story-data';
+import { getTodayDate } from '@/lib/utils';
 
-// Today is February 22, 2026 (Day 16)
-const TODAY = '2026-02-22';
+// Today is calculated dynamically
+const TODAY = getTodayDate();
 
 const SUBHEADINGS = [
   'Consistency is your superpower.',
