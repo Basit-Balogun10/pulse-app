@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Send, X, MessageCircle, Maximize2, Minimize2, Paperclip, Image as ImageIcon, Mic, Sparkles } from 'lucide-react';
+import { Send, X, MessageCircle, Maximize2, Minimize2, Paperclip, Image as ImageIcon, Mic, Sparkles, FileText } from 'lucide-react';
 import { streamGeminiResponse } from '@/lib/gemini';
 import { userProfile } from '@/lib/mock-data';
 import { amaraFullStory, amaraChatDetections, type ChatDetection } from '@/lib/amara-story-data';
@@ -13,6 +13,13 @@ interface Message {
   text: string;
   timestamp: Date;
   isStreaming?: boolean;
+}
+
+interface Attachment {
+  id: string;
+  file: File;
+  type: 'file' | 'image';
+  preview?: string;
 }
 
 interface ChatBoxProps {
@@ -37,6 +44,8 @@ export function ChatBox({ isOpen, onClose, checkInHistory = amaraFullStory, curr
   const [isRecording, setIsRecording] = useState(false);
   const [recordingDuration, setRecordingDuration] = useState(0);
   const [detectedInfo, setDetectedInfo] = useState<ChatDetection[]>([]);
+  const [attachments, setAttachments] = useState<Attachment[]>([]);
+  const [previewAttachment, setPreviewAttachment] = useState<Attachment | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
@@ -201,52 +210,78 @@ export function ChatBox({ isOpen, onClose, checkInHistory = amaraFullStory, curr
   };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const userMessage: Message = {
-        id: Date.now().toString(),
-        type: 'user',
-        text: `📎 Attached: ${file.name}`,
-        timestamp: new Date(),
-      };
-      setMessages((prev) => [...prev, userMessage]);
-      
-      setTimeout(() => {
-        const aiMessage: Message = {
-          id: (Date.now() + 1).toString(),
-          type: 'ai',
-          text: 'I\'ve received your file. In a full implementation, I\'d analyze medical documents, lab results, or prescription images to provide personalized health insights.',
-          timestamp: new Date(),
-        };
-        setMessages((prev) => [...prev, aiMessage]);
-      }, 1000);
+    const files = e.target.files;
+    if (files) {
+      const newAttachments: Attachment[] = Array.from(files).map(file => ({
+        id: Date.now().toString() + Math.random(),
+        file,
+        type: 'file' as const,
+      }));
+      setAttachments(prev => [...prev, ...newAttachments]);
     }
+    e.target.value = ''; // Reset input
   };
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
+    const files = e.target.files;
+    if (files) {
+      Array.from(files).forEach(file => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const newAttachment: Attachment = {
+            id: Date.now().toString() + Math.random(),
+            file,
+            type: 'image',
+            preview: reader.result as string,
+          };
+          setAttachments(prev => [...prev, newAttachment]);
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+    e.target.value = ''; // Reset input
+  };
+
+  const removeAttachment = (id: string) => {
+    setAttachments(prev => prev.filter(a => a.id !== id));
+  };
+
+  const sendWithAttachments = () => {
+    if (attachments.length > 0 || inputValue.trim()) {
       const userMessage: Message = {
         id: Date.now().toString(),
         type: 'user',
-        text: `🖼️ Image attached: ${file.name}`,
+        text: inputValue.trim() || 'Sent attachments',
         timestamp: new Date(),
       };
-      setMessages((prev) => [...prev, userMessage]);
+      setMessages(prev => [...prev, userMessage]);
+      
+      if (attachments.length > 0) {
+        const attachmentMessage: Message = {
+          id: (Date.now() + 1).toString(),
+          type: 'user',
+          text: `📎 ${attachments.length} attachment(s): ${attachments.map(a => a.file.name).join(', ')}`,
+          timestamp: new Date(),
+        };
+        setMessages(prev => [...prev, attachmentMessage]);
+      }
+      
+      setInputValue('');
+      setAttachments([]);
       
       setTimeout(() => {
         const aiMessage: Message = {
-          id: (Date.now() + 1).toString(),
+          id: (Date.now() + 2).toString(),
           type: 'ai',
-          text: 'Image received! I can help analyze medical photos, skin conditions, prescription bottles, or health-related images to provide insights.',
+          text: 'I\'ve received your attachments. In a full implementation, I\'d analyze medical documents, lab results, or health-related images to provide personalized insights.',
           timestamp: new Date(),
         };
-        setMessages((prev) => [...prev, aiMessage]);
+        setMessages(prev => [...prev, aiMessage]);
       }, 1000);
     }
   };
 
-  const handleVoiceInput = () => {
+  const handleVoiceInput = async () => {
     if (isRecording) {
       setIsRecording(false);
       if (recordingIntervalRef.current) {
@@ -278,11 +313,19 @@ export function ChatBox({ isOpen, onClose, checkInHistory = amaraFullStory, curr
         setIsLoading(false);
       }, 1000);
     } else {
-      setIsRecording(true);
-      setRecordingDuration(0);
-      recordingIntervalRef.current = setInterval(() => {
-        setRecordingDuration(prev => prev + 1);
-      }, 1000);
+      try {
+        // Request microphone permission
+        await navigator.mediaDevices.getUserMedia({ audio: true });
+        
+        setIsRecording(true);
+        setRecordingDuration(0);
+        recordingIntervalRef.current = setInterval(() => {
+          setRecordingDuration(prev => prev + 1);
+        }, 1000);
+      } catch (error) {
+        console.error('Microphone permission error:', error);
+        alert('Unable to access microphone. Please enable microphone permissions in your browser settings.');
+      }
     }
   };
 
@@ -428,8 +471,45 @@ export function ChatBox({ isOpen, onClose, checkInHistory = amaraFullStory, curr
 
             {/* Input Area */}
             <div className="p-6 pt-4 border-t border-border">
-              {/* Media Buttons Row */}
-              <div className="flex items-center gap-2 mb-3">
+              {/* Attachment Previews */}
+              {attachments.length > 0 && (
+                <div className="mb-3 flex gap-2 overflow-x-auto pb-2">
+                  {attachments.map((attachment) => (
+                    <motion.div
+                      key={attachment.id}
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      className="relative group shrink-0"
+                    >
+                      {attachment.type === 'image' && attachment.preview ? (
+                        <div 
+                          className="w-20 h-20 rounded-xl overflow-hidden bg-muted cursor-pointer border-2 border-border hover:border-[#84CC16] transition-colors"
+                          onClick={() => setPreviewAttachment(attachment)}
+                        >
+                          <img src={attachment.preview} alt={attachment.file.name} className="w-full h-full object-cover" />
+                        </div>
+                      ) : (
+                        <div 
+                          className="w-20 h-20 rounded-xl bg-muted flex flex-col items-center justify-center cursor-pointer border-2 border-border hover:border-[#84CC16] transition-colors"
+                          onClick={() => setPreviewAttachment(attachment)}
+                        >
+                          <FileText className="w-6 h-6 text-muted-foreground mb-1" />
+                          <span className="text-[8px] text-muted-foreground text-center px-1 truncate w-full">{attachment.file.name}</span>
+                        </div>
+                      )}
+                      <button
+                        onClick={() => removeAttachment(attachment.id)}
+                        className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </motion.div>
+                  ))}
+                </div>
+              )}
+
+              {/* Media Buttons Row - Centered */}
+              <div className="flex items-center justify-center gap-2 mb-3 overflow-x-auto pb-1">
                 <motion.button
                   whileTap={{ scale: 0.97 }}
                   onClick={() => fileInputRef.current?.click()}
@@ -461,7 +541,7 @@ export function ChatBox({ isOpen, onClose, checkInHistory = amaraFullStory, curr
               </div>
 
               {/* Text Input + Send */}
-              <form onSubmit={handleSendMessage} className="flex gap-3">
+              <form onSubmit={(e) => { e.preventDefault(); sendWithAttachments(); }} className="flex gap-3">
                 <textarea
                   value={inputValue}
                   onChange={(e) => setInputValue(e.target.value)}
@@ -479,7 +559,7 @@ export function ChatBox({ isOpen, onClose, checkInHistory = amaraFullStory, curr
                 <motion.button
                   whileTap={{ scale: 0.97 }}
                   type="submit"
-                  disabled={!inputValue.trim() || isLoading}
+                  disabled={(!inputValue.trim() && attachments.length === 0) || isLoading}
                   className="bg-[#84CC16] text-white p-3 rounded-2xl hover:bg-[#84CC16]/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center self-end"
                 >
                   <Send className="w-5 h-5" />
@@ -493,6 +573,7 @@ export function ChatBox({ isOpen, onClose, checkInHistory = amaraFullStory, curr
                 accept=".pdf,.doc,.docx,.txt"
                 onChange={handleFileSelect}
                 className="hidden"
+                multiple
               />
               <input
                 ref={imageInputRef}
@@ -500,9 +581,55 @@ export function ChatBox({ isOpen, onClose, checkInHistory = amaraFullStory, curr
                 accept="image/*"
                 onChange={handleImageSelect}
                 className="hidden"
+                multiple
               />
             </div>
           </motion.div>
+
+          {/* Attachment Preview Modal */}
+          <AnimatePresence>
+            {previewAttachment && (
+              <>
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  onClick={() => setPreviewAttachment(null)}
+                  className="fixed inset-0 bg-black/80 z-50 backdrop-blur-sm"
+                />
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.9 }}
+                  className="fixed inset-0 z-50 flex items-center justify-center p-6"
+                >
+                  <div className="relative max-w-4xl max-h-[90vh] w-full">
+                    <button
+                      onClick={() => setPreviewAttachment(null)}
+                      className="absolute -top-12 right-0 w-10 h-10 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center transition-colors"
+                    >
+                      <X className="w-6 h-6 text-white" />
+                    </button>
+                    {previewAttachment.type === 'image' && previewAttachment.preview ? (
+                      <img
+                        src={previewAttachment.preview}
+                        alt={previewAttachment.file.name}
+                        className="w-full h-full object-contain rounded-2xl"
+                      />
+                    ) : (
+                      <div className="bg-card rounded-2xl p-12 text-center">
+                        <FileText className="w-24 h-24 text-muted-foreground mx-auto mb-4" />
+                        <h3 className="text-2xl font-bold text-foreground mb-2">{previewAttachment.file.name}</h3>
+                        <p className="text-muted-foreground">
+                          {(previewAttachment.file.size / 1024).toFixed(1)} KB
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </motion.div>
+              </>
+            )}
+          </AnimatePresence>
         </>
       )}
     </AnimatePresence>

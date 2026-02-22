@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Mic, MicOff } from 'lucide-react';
 
@@ -20,27 +20,90 @@ const CHIPS = [
 export function OpenFlagCard({ onValue, onNext }: Props) {
   const [note, setNote] = useState('');
   const [isRecording, setIsRecording] = useState(false);
+  const [recordingDuration, setRecordingDuration] = useState(0);
+  const recordingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const recognitionRef = useRef<any>(null);
+
+  useEffect(() => {
+    return () => {
+      if (recordingIntervalRef.current) {
+        clearInterval(recordingIntervalRef.current);
+      }
+      if (recognitionRef.current) {
+        recognitionRef.current.stop();
+      }
+    };
+  }, []);
 
   const handleChip = (chip: string) => { setNote(chip); onValue(chip); };
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => { setNote(e.target.value); onValue(e.target.value); };
   const handleSkip = () => { onValue(''); onNext(); };
   const handleDone = () => { onValue(note); onNext(); };
 
-  const startVoice = () => {
-    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SR) { alert('Voice input not supported in this browser.'); return; }
-    const recognition = new SR();
-    recognition.lang = 'en-US';
-    recognition.interimResults = false;
-    setIsRecording(true);
-    recognition.onresult = (e: any) => {
-      const transcript = e.results[0][0].transcript;
-      setNote((prev) => (prev ? prev + ' ' + transcript : transcript));
-      onValue(note);
-    };
-    recognition.onend = () => setIsRecording(false);
-    recognition.onerror = () => setIsRecording(false);
-    recognition.start();
+  const startVoice = async () => {
+    try {
+      // Request microphone permission
+      await navigator.mediaDevices.getUserMedia({ audio: true });
+      
+      const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+      if (!SR) { 
+        alert('Voice input not supported in this browser.'); 
+        return; 
+      }
+      
+      const recognition = new SR();
+      recognition.lang = 'en-US';
+      recognition.interimResults = false;
+      recognitionRef.current = recognition;
+      
+      setIsRecording(true);
+      setRecordingDuration(0);
+      
+      // Start duration counter
+      recordingIntervalRef.current = setInterval(() => {
+        setRecordingDuration(prev => prev + 1);
+      }, 1000);
+      
+      recognition.onresult = (e: any) => {
+        const transcript = e.results[0][0].transcript;
+        const newNote = note ? note + ' ' + transcript : transcript;
+        setNote(newNote);
+        onValue(newNote);
+      };
+      
+      recognition.onend = () => {
+        setIsRecording(false);
+        if (recordingIntervalRef.current) {
+          clearInterval(recordingIntervalRef.current);
+        }
+      };
+      
+      recognition.onerror = (e: any) => {
+        console.error('Speech recognition error:', e);
+        setIsRecording(false);
+        if (recordingIntervalRef.current) {
+          clearInterval(recordingIntervalRef.current);
+        }
+        if (e.error === 'not-allowed') {
+          alert('Microphone permission denied. Please enable it in your browser settings.');
+        }
+      };
+      
+      recognition.start();
+    } catch (error) {
+      console.error('Microphone access error:', error);
+      alert('Unable to access microphone. Please check your browser permissions.');
+    }
+  };
+
+  const stopVoice = () => {
+    if (recognitionRef.current) {
+      recognitionRef.current.stop();
+    }
+    setIsRecording(false);
+    if (recordingIntervalRef.current) {
+      clearInterval(recordingIntervalRef.current);
+    }
   };
 
   return (
@@ -72,7 +135,7 @@ export function OpenFlagCard({ onValue, onNext }: Props) {
               </button>
             )}
             <motion.button
-              onClick={startVoice}
+              onClick={isRecording ? stopVoice : startVoice}
               whileTap={{ scale: 0.95 }}
               animate={isRecording ? { scale: [1, 1.1, 1] } : {}}
               transition={isRecording ? { duration: 0.8, repeat: Infinity } : {}}
@@ -83,7 +146,7 @@ export function OpenFlagCard({ onValue, onNext }: Props) {
               }`}
             >
               {isRecording ? <MicOff className="w-3 h-3" /> : <Mic className="w-3 h-3" />}
-              {isRecording ? 'Listening…' : 'Voice'}
+              {isRecording ? `Recording... ${recordingDuration}s` : 'Voice'}
             </motion.button>
           </div>
         </div>
