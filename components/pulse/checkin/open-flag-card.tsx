@@ -107,12 +107,12 @@ export function OpenFlagCard({ onValue, onNext }: Props) {
   };
 
   return (
-    <div className="rounded-3xl bg-card border border-border shadow-lg p-6 select-none max-h-[75vh] flex flex-col">
+    <div className="rounded-3xl bg-card border border-border shadow-lg p-6 select-none">
       <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Notes</p>
       <h3 className="text-xl font-bold text-foreground mb-2">Anything unusual today?</h3>
       <p className="text-sm text-muted-foreground mb-4">Didn't fit the other cards? Share here — optional.</p>
 
-      <div className="space-y-3 overflow-y-auto flex-1">
+      <div className="space-y-3">
       {/* Textarea */}
       <div
         className={`bg-muted rounded-2xl p-4 mb-3 border-2 transition-colors ${
@@ -179,7 +179,6 @@ export function OpenFlagCard({ onValue, onNext }: Props) {
       >
         Skip
       </motion.button>
-      </div>
     </div>
   );
 }

@@ -36,13 +36,13 @@ export function AppetiteCard({ onValue, value }: Props) {
   const selBowel = (v: boolean) => { setBowel(v); update(appetite, digestion, v); };
 
   return (
-    <div className="rounded-3xl bg-card border border-border shadow-lg p-6 select-none max-h-[75vh] flex flex-col">
+    <div className="rounded-3xl bg-card border border-border shadow-lg p-6 select-none">
       <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Appetite</p>
       <h3 className="text-xl font-bold text-foreground mb-4">
         How's your appetite and digestion today?
       </h3>
 
-      <div className="space-y-4 overflow-y-auto flex-1">
+      <div className="space-y-4">
       {/* Section 1 — Appetite */}
       <p className="text-sm font-semibold text-foreground mb-2">Appetite</p>
       <div className="flex gap-2 mb-4">
@@ -110,7 +110,6 @@ export function AppetiteCard({ onValue, value }: Props) {
         >
           ⚠️ Yes
         </motion.button>
-      </div>
       </div>
     </div>
   );

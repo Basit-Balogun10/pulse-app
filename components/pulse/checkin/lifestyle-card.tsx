@@ -98,13 +98,13 @@ export function LifestyleCard({ onValue, value }: Props) {
   };
 
   return (
-    <div className="rounded-3xl bg-card border border-border shadow-lg p-6 select-none max-h-[75vh] flex flex-col">
+    <div className="rounded-3xl bg-card border border-border shadow-lg p-6 select-none">
       <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Lifestyle</p>
       <h3 className="text-xl font-bold text-foreground mb-5">
         Quick lifestyle snapshot for today.
       </h3>
 
-      <div className="space-y-5 overflow-y-auto flex-1">
+      <div className="space-y-5">
         {/* Water Intake - Slider */}
         <div className="space-y-2">
           <div className="flex items-center gap-2">

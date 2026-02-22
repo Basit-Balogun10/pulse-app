@@ -79,9 +79,9 @@ export function CheckInView({ onComplete }: CheckInViewProps) {
   const CardComponent = current.component;
 
   return (
-    <div className="h-full flex flex-col relative overflow-hidden">
+    <div className="h-full flex flex-col bg-background">
       {/* Sticky Header */}
-      <div className="sticky top-0 z-10 px-6 pt-6 pb-4 bg-card border-b border-border">
+      <div className="flex-shrink-0 px-6 pt-6 pb-4 bg-card border-b border-border">
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-xl font-bold text-foreground">Daily Check-in</h2>
           <span className="text-sm text-muted-foreground font-medium">
@@ -97,30 +97,31 @@ export function CheckInView({ onComplete }: CheckInViewProps) {
         </div>
       </div>
 
-      {/* Card Area */}
-      <div className="flex-1 flex items-start justify-center relative px-4 pt-4 pb-2 overflow-hidden">
-        <AnimatePresence mode="wait" custom={direction}>
-          <motion.div
-            key={currentIndex}
-            custom={direction}
-            variants={variants}
-            initial="enter"
-            animate="center"
-            exit="exit"
-            transition={{ duration: 0.35, ease: [0.25, 0.46, 0.45, 0.94] }}
-            className="w-full max-w-md"
-          >
-            <CardComponent
-              onValue={handleValue}
-              onNext={goNext}
-              value={checkInData[current.id]}
-            />
-          </motion.div>
-        </AnimatePresence>
+      {/* Card Area - Scrollable */}
+      <div className="flex-1 overflow-y-auto px-4 py-6">
+        <div className="max-w-md mx-auto">
+          <AnimatePresence mode="wait" custom={direction}>
+            <motion.div
+              key={currentIndex}
+              custom={direction}
+              variants={variants}
+              initial="enter"
+              animate="center"
+              exit="exit"
+              transition={{ duration: 0.35, ease: [0.25, 0.46, 0.45, 0.94] }}
+            >
+              <CardComponent
+                onValue={handleValue}
+                onNext={goNext}
+                value={checkInData[current.id]}
+              />
+            </motion.div>
+          </AnimatePresence>
+        </div>
       </div>
 
       {/* Navigation */}
-      <div className="px-6 py-4 bg-card border-t border-border flex gap-3">
+      <div className="flex-shrink-0 px-6 py-4 bg-card border-t border-border flex gap-3">
         <motion.button
           whileTap={{ scale: 0.97 }}
           onClick={goBack}

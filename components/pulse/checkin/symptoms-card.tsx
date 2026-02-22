@@ -93,12 +93,12 @@ export function SymptomsCard({ onValue, value }: Props) {
   };
 
   return (
-    <div className="rounded-3xl bg-card border border-border shadow-lg p-5 select-none max-h-[70vh] flex flex-col">
+    <div className="rounded-3xl bg-card border border-border shadow-lg p-5 select-none">
       <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Body</p>
       <h3 className="text-xl font-bold text-foreground mb-4">
         Any physical discomfort today?
       </h3>
-      <ScrollArea className="flex-1 -mx-5 px-5">
+      <div>
 
       {/* Stage 0 — None button */}
       <motion.button
@@ -211,7 +211,7 @@ export function SymptomsCard({ onValue, value }: Props) {
           </motion.div>
         )}
       </AnimatePresence>
-      </ScrollArea>
+      </div>
     </div>
   );
 }

@@ -42,14 +42,14 @@ export function RespiratoryCard({ onValue, value }: Props) {
   };
 
   return (
-    <div className="rounded-3xl bg-card border border-border shadow-lg p-6 select-none max-h-[75vh] flex flex-col">
+    <div className="rounded-3xl bg-card border border-border shadow-lg p-6 select-none">
       <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Respiratory</p>
       <h3 className="text-xl font-bold text-foreground mb-5">
         Any respiratory symptoms today?
       </h3>
       <p className="text-xs text-muted-foreground mb-4">Select all that apply</p>
 
-      <div className="space-y-2 overflow-y-auto flex-1">
+      <div className="space-y-2">
         {OPTIONS.map(({ id, emoji, label }) => {
           const isSelected = selected.has(id);
           return (
