@@ -110,7 +110,7 @@ export function Dashboard() {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.25 }}
-          className={`h-full pb-20 ${activeView === 'checkin' ? 'overflow-hidden' : 'overflow-y-auto'}`}
+          className="h-full overflow-y-auto pb-20"
         >
           {renderView()}
         </motion.div>
