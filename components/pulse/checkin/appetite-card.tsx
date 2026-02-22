@@ -111,6 +111,7 @@ export function AppetiteCard({ onValue, value }: Props) {
           ⚠️ Yes
         </motion.button>
       </div>
+      </div>
     </div>
   );
 }
