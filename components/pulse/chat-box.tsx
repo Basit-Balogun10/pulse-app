@@ -402,15 +402,29 @@ export function ChatBox({ isOpen, onClose, checkInHistory = amaraFullStory, curr
 
             {/* Messages Container */}
             <div className="flex-1 overflow-y-auto p-6 space-y-4">
-              {messages.map((message) => (
-                <motion.div
-                  key={message.id}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className={`flex ${
-                    message.type === 'user' ? 'justify-end' : 'justify-start'
-                  }`}
-                >
+              {messages.map((message, index) => {
+                const showDatePill = index === 0 || 
+                  new Date(messages[index - 1].timestamp).toDateString() !== new Date(message.timestamp).toDateString();
+                
+                return (
+                  <div key={message.id}>
+                    {showDatePill && (
+                      <div className="flex justify-center mb-4">
+                        <div className="px-3 py-1 rounded-full bg-muted/50 text-xs text-muted-foreground font-medium">
+                          {new Date(message.timestamp).toLocaleDateString('en-GB', { 
+                            day: 'numeric', 
+                            month: 'short' 
+                          })}
+                        </div>
+                      </div>
+                    )}
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className={`flex ${
+                        message.type === 'user' ? 'justify-end' : 'justify-start'
+                      }`}
+                    >
                   <div
                     className={`max-w-xs lg:max-w-md px-4 py-3 rounded-2xl ${
                       message.type === 'user'
@@ -439,7 +453,9 @@ export function ChatBox({ isOpen, onClose, checkInHistory = amaraFullStory, curr
                     </p>
                   </div>
                 </motion.div>
-              ))}
+                  </div>
+                );
+              })}
 
               {isLoading && (
                 <motion.div
