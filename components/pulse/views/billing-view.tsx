@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Check, Star, Zap, Shield, Gift, CreditCard, Calendar, X, ExternalLink } from 'lucide-react';
+import { ArrowLeft, Check, Star, Zap, Shield, Gift, CreditCard, Calendar, X, ExternalLink, Info } from 'lucide-react';
 import { userProfile } from '@/lib/mock-data';
 
 interface BillingViewProps {
@@ -29,6 +29,11 @@ export function BillingView({ onBack }: BillingViewProps) {
   const [showManageModal, setShowManageModal] = useState(false);
   const [showPaymentMethodModal, setShowPaymentMethodModal] = useState(false);
   const [showBillingHistory, setShowBillingHistory] = useState(false);
+  const [showAddPaymentForm, setShowAddPaymentForm] = useState(false);
+  const [showChangePlanConfirm, setShowChangePlanConfirm] = useState(false);
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  const [showDiscountInfo, setShowDiscountInfo] = useState(false);
+  const planSectionRef = useRef<HTMLDivElement>(null);
   const currentTierIndex = getTierIndex(userProfile.streak);
   const currentTier = TIERS[currentTierIndex];
 
@@ -130,7 +135,7 @@ export function BillingView({ onBack }: BillingViewProps) {
         </div>
 
         {/* What you get */}
-        <div className="bg-muted rounded-2xl p-4 space-y-3">
+        <div ref={planSectionRef} className="bg-muted rounded-2xl p-4 space-y-3">
           {[
             { icon: Zap, label: 'Daily AI health analysis after check-in' },
             { icon: Shield, label: 'Secure, encrypted health data' },
@@ -146,7 +151,16 @@ export function BillingView({ onBack }: BillingViewProps) {
 
         {/* Discount code */}
         <div className="bg-[#84CC16]/10 border border-[#84CC16] rounded-2xl p-4">
-          <p className="text-xs text-muted-foreground mb-1 font-semibold">Active Discount Code</p>
+          <div className="flex items-center justify-between mb-1">
+            <p className="text-xs text-muted-foreground font-semibold">Active Discount Code</p>
+            <motion.button
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setShowDiscountInfo(true)}
+              className="w-6 h-6 rounded-full bg-[#84CC16]/20 flex items-center justify-center"
+            >
+              <Info className="w-4 h-4 text-[#84CC16]" />
+            </motion.button>
+          </div>
           <p className="text-lg font-mono font-bold text-foreground">PULSE-AMR-2024</p>
           <p className="text-xs text-muted-foreground mt-1">Valid for 30 days · Use at any partner clinic</p>
         </div>
@@ -216,7 +230,7 @@ export function BillingView({ onBack }: BillingViewProps) {
                   description={`Currently on ${selectedPlan} plan`}
                   onClick={() => {
                     setShowManageModal(false);
-                    // Scroll to plan selection
+                    setShowChangePlanConfirm(true);
                   }}
                 />
                 <ManageButton
@@ -224,7 +238,8 @@ export function BillingView({ onBack }: BillingViewProps) {
                   label="Cancel Subscription"
                   description="We'll be sad to see you go"
                   onClick={() => {
-                    alert('Cancellation flow would be here');
+                    setShowManageModal(false);
+                    setShowCancelConfirm(true);
                   }}
                   danger
                 />
@@ -278,6 +293,7 @@ export function BillingView({ onBack }: BillingViewProps) {
                 </div>
                 <motion.button
                   whileTap={{ scale: 0.97 }}
+                  onClick={() => setShowAddPaymentForm(true)}
                   className="w-full py-3 rounded-2xl border-2 border-dashed border-border text-muted-foreground font-semibold text-sm hover:border-[#84CC16] hover:text-[#84CC16] transition-colors"
                 >
                   + Add New Payment Method
@@ -335,6 +351,343 @@ export function BillingView({ onBack }: BillingViewProps) {
                 ))}
                 <p className="text-center text-xs text-muted-foreground pt-2">
                   All payments secured by Paystack
+                </p>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Add Payment Form Modal */}
+      <AnimatePresence>
+        {showAddPaymentForm && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4"
+            onClick={() => setShowAddPaymentForm(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-background rounded-3xl overflow-hidden w-full max-w-md"
+            >
+              <div className="px-6 py-4 border-b border-border flex items-center justify-between">
+                <h3 className="text-lg font-bold text-foreground">Add Payment Method</h3>
+                <motion.button
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => setShowAddPaymentForm(false)}
+                  className="w-9 h-9 rounded-full bg-muted flex items-center justify-center"
+                >
+                  <X className="w-5 h-5 text-foreground" />
+                </motion.button>
+              </div>
+              <div className="p-6 space-y-4">
+                <div>
+                  <label className="text-xs text-muted-foreground font-semibold mb-2 block">Card Number</label>
+                  <input
+                    type="text"
+                    placeholder="1234 5678 9012 3456"
+                    maxLength={19}
+                    className="w-full px-4 py-3 rounded-xl border-2 border-border bg-card text-foreground focus:border-[#84CC16] outline-none transition-colors"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-xs text-muted-foreground font-semibold mb-2 block">Expiry Date</label>
+                    <input
+                      type="text"
+                      placeholder="MM/YY"
+                      maxLength={5}
+                      className="w-full px-4 py-3 rounded-xl border-2 border-border bg-card text-foreground focus:border-[#84CC16] outline-none transition-colors"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs text-muted-foreground font-semibold mb-2 block">CVV</label>
+                    <input
+                      type="text"
+                      placeholder="123"
+                      maxLength={3}
+                      className="w-full px-4 py-3 rounded-xl border-2 border-border bg-card text-foreground focus:border-[#84CC16] outline-none transition-colors"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground font-semibold mb-2 block">Cardholder Name</label>
+                  <input
+                    type="text"
+                    placeholder="John Doe"
+                    className="w-full px-4 py-3 rounded-xl border-2 border-border bg-card text-foreground focus:border-[#84CC16] outline-none transition-colors"
+                  />
+                </div>
+                <motion.button
+                  whileTap={{ scale: 0.97 }}
+                  onClick={() => {
+                    setShowAddPaymentForm(false);
+                    setShowPaymentMethodModal(true);
+                  }}
+                  className="w-full py-3 rounded-2xl bg-[#84CC16] text-white font-bold text-sm hover:bg-[#84CC16]/90 transition-colors"
+                >
+                  Add Card
+                </motion.button>
+                <p className="text-center text-xs text-muted-foreground">
+                  Secured by Paystack · Your card info is encrypted
+                </p>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Change Plan Confirmation Modal */}
+      <AnimatePresence>
+        {showChangePlanConfirm && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4"
+            onClick={() => setShowChangePlanConfirm(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-background rounded-3xl overflow-hidden w-full max-w-md"
+            >
+              <div className="px-6 py-4 border-b border-border flex items-center justify-between">
+                <h3 className="text-lg font-bold text-foreground">Change Plan</h3>
+                <motion.button
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => setShowChangePlanConfirm(false)}
+                  className="w-9 h-9 rounded-full bg-muted flex items-center justify-center"
+                >
+                  <X className="w-5 h-5 text-foreground" />
+                </motion.button>
+              </div>
+              <div className="p-6 space-y-4">
+                <p className="text-sm text-foreground">
+                  You're currently on the <span className="font-bold capitalize">{selectedPlan}</span> plan.
+                  Switch to <span className="font-bold capitalize">{selectedPlan === 'monthly' ? 'annual' : 'monthly'}</span>?
+                </p>
+                <div className="bg-muted rounded-2xl p-4 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-muted-foreground">Current Plan</span>
+                    <span className="text-sm font-bold text-foreground capitalize">{selectedPlan}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-muted-foreground">Current Price</span>
+                    <span className="text-sm font-bold text-foreground">{selectedPlan === 'monthly' ? '₦1,500/mo' : '₦14,400/yr'}</span>
+                  </div>
+                  <div className="pt-2 border-t border-border">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-muted-foreground">New Plan</span>
+                      <span className="text-sm font-bold text-[#84CC16] capitalize">{selectedPlan === 'monthly' ? 'annual' : 'monthly'}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-muted-foreground">New Price</span>
+                      <span className="text-sm font-bold text-[#84CC16]">{selectedPlan === 'monthly' ? '₦14,400/yr' : '₦1,500/mo'}</span>
+                    </div>
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {selectedPlan === 'monthly' 
+                    ? 'Switching to annual will charge ₦14,400 immediately and save you 20%.'
+                    : 'Switching to monthly will charge ₦1,500 on your next billing date.'}
+                </p>
+                <div className="flex gap-3">
+                  <motion.button
+                    whileTap={{ scale: 0.97 }}
+                    onClick={() => setShowChangePlanConfirm(false)}
+                    className="flex-1 py-3 rounded-2xl border-2 border-border text-foreground font-semibold text-sm hover:border-[#84CC16]/40 transition-colors"
+                  >
+                    Cancel
+                  </motion.button>
+                  <motion.button
+                    whileTap={{ scale: 0.97 }}
+                    onClick={() => {
+                      setSelectedPlan(selectedPlan === 'monthly' ? 'annual' : 'monthly');
+                      setShowChangePlanConfirm(false);
+                      planSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }}
+                    className="flex-1 py-3 rounded-2xl bg-[#84CC16] text-white font-bold text-sm hover:bg-[#84CC16]/90 transition-colors"
+                  >
+                    Confirm Change
+                  </motion.button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Cancel Subscription Confirmation Modal */}
+      <AnimatePresence>
+        {showCancelConfirm && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4"
+            onClick={() => setShowCancelConfirm(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-background rounded-3xl overflow-hidden w-full max-w-md"
+            >
+              <div className="px-6 py-4 border-b border-border flex items-center justify-between">
+                <h3 className="text-lg font-bold text-foreground">Cancel Subscription?</h3>
+                <motion.button
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => setShowCancelConfirm(false)}
+                  className="w-9 h-9 rounded-full bg-muted flex items-center justify-center"
+                >
+                  <X className="w-5 h-5 text-foreground" />
+                </motion.button>
+              </div>
+              <div className="p-6 space-y-4">
+                <p className="text-sm text-foreground">
+                  We're sorry to see you go! Your subscription will remain active until the end of your current billing period.
+                </p>
+                <div className="bg-[#EF4444]/10 border border-[#EF4444]/30 rounded-2xl p-4 space-y-2">
+                  <p className="text-xs text-muted-foreground font-semibold">You'll lose access to:</p>
+                  <ul className="space-y-1">
+                    <li className="text-sm text-foreground flex items-center gap-2">
+                      <X className="w-4 h-4 text-[#EF4444] shrink-0" />
+                      Daily AI health insights
+                    </li>
+                    <li className="text-sm text-foreground flex items-center gap-2">
+                      <X className="w-4 h-4 text-[#EF4444] shrink-0" />
+                      {currentTier.discount} clinic visit discount
+                    </li>
+                    <li className="text-sm text-foreground flex items-center gap-2">
+                      <X className="w-4 h-4 text-[#EF4444] shrink-0" />
+                      Your {userProfile.streak}-day streak progress
+                    </li>
+                  </ul>
+                </div>
+                <div className="flex gap-3">
+                  <motion.button
+                    whileTap={{ scale: 0.97 }}
+                    onClick={() => setShowCancelConfirm(false)}
+                    className="flex-1 py-3 rounded-2xl bg-[#84CC16] text-white font-bold text-sm hover:bg-[#84CC16]/90 transition-colors"
+                  >
+                    Keep Subscription
+                  </motion.button>
+                  <motion.button
+                    whileTap={{ scale: 0.97 }}
+                    onClick={() => {
+                      setShowCancelConfirm(false);
+                      alert('Subscription cancelled. You have access until end of billing period.');
+                    }}
+                    className="flex-1 py-3 rounded-2xl border-2 border-[#EF4444] text-[#EF4444] font-semibold text-sm hover:bg-[#EF4444]/10 transition-colors"
+                  >
+                    Cancel Anyway
+                  </motion.button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Discount Info Modal */}
+      <AnimatePresence>
+        {showDiscountInfo && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4"
+            onClick={() => setShowDiscountInfo(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-background rounded-3xl overflow-hidden w-full max-w-md max-h-[80vh] overflow-y-auto"
+            >
+              <div className="px-6 py-4 border-b border-border flex items-center justify-between sticky top-0 bg-background z-10">
+                <h3 className="text-lg font-bold text-foreground">How Discounts Work</h3>
+                <motion.button
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => setShowDiscountInfo(false)}
+                  className="w-9 h-9 rounded-full bg-muted flex items-center justify-center"
+                >
+                  <X className="w-5 h-5 text-foreground" />
+                </motion.button>
+              </div>
+              <div className="p-6 space-y-4">
+                <p className="text-sm text-foreground">
+                  Your loyalty is rewarded! The longer you check in consistently, the higher your tier and clinic visit discounts.
+                </p>
+                
+                <div className="space-y-3">
+                  {TIERS.map((tier, i) => {
+                    const isAchieved = i <= currentTierIndex;
+                    return (
+                      <div
+                        key={tier.name}
+                        className={`rounded-2xl p-4 border-2 transition-all ${
+                          i === currentTierIndex 
+                            ? 'border-[#84CC16] bg-[#84CC16]/5' 
+                            : isAchieved
+                            ? 'border-[#84CC16]/30 bg-card'
+                            : 'border-border bg-muted/50'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3 mb-2">
+                          <span className="text-2xl">{tier.emoji}</span>
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <p className="font-bold text-foreground">{tier.name}</p>
+                              {i === currentTierIndex && (
+                                <span className="text-xs bg-[#84CC16] text-white px-2 py-0.5 rounded-full font-bold">
+                                  Current
+                                </span>
+                              )}
+                              {isAchieved && i < currentTierIndex && (
+                                <Check className="w-4 h-4 text-[#84CC16]" />
+                              )}
+                            </div>
+                            <p className="text-xs text-muted-foreground">{tier.weeks}</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-lg font-bold text-[#84CC16]">{tier.discount}</p>
+                            <p className="text-xs text-muted-foreground">Off visits</p>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                <div className="bg-gradient-to-br from-[#84CC16]/20 to-[#14B8A6]/20 border-2 border-[#84CC16] rounded-2xl p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Star className="w-5 h-5 text-[#84CC16]" />
+                    <p className="font-bold text-foreground">Reach 100% Discount!</p>
+                  </div>
+                  <p className="text-sm text-foreground mb-2">
+                    Special achievement: Maintain a 6+ month streak with <span className="font-bold">7/7 days per week</span> consistency to unlock a <span className="font-bold text-[#84CC16]">100% discount</span> on one clinic visit per year!
+                  </p>
+                  <div className="pt-3 border-t border-border/50">
+                    <p className="text-xs text-muted-foreground">
+                      Your current streak: <span className="text-foreground font-semibold">{userProfile.streak} days</span> · 
+                      Consistency: <span className="text-foreground font-semibold">5/7 days/week</span>
+                    </p>
+                  </div>
+                </div>
+
+                <p className="text-xs text-muted-foreground text-center pt-2">
+                  Discounts are applied automatically at partner clinics when you show your Pulse QR code
                 </p>
               </div>
             </motion.div>

@@ -1,15 +1,127 @@
-# 21-Item Feedback Tracking
+# 21-Item Feedback Tracking - PROGRESS UPDATE
 
-## Status Legend
-- [ ] Not Started
-- [⚙️] In Progress  
-- [✅] Completed
+## ✅ COMPLETED ITEMS (10/21)
+
+### Item 1: Custom input for medical history ✅
+- Added "Other" option with custom input for Known Diagnoses
+- Added "Other" option with custom input for Family History
+
+### Item 3: Clinics filter modal ✅
+- Converted specialty filter from single to multi-select
+- Users can select multiple specialties simultaneously
+
+### Item 5: Chat attachment previews ✅  
+- Centered media buttons with scrollable layout
+- Added attachment preview system with horizontal scroll
+- Click to preview images/files in fullscreen modal
+- X buttons to remove attachments before sending
+- Multiple file/image upload support
+
+### Item 6: Chat date pills ✅
+- Added date separator pills between messages from different days
+- Shows date in format 'DD MMM'
+
+### Item 9: Check-in button icon ✅
+- Already implemented (ChevronRight icon)
+
+### Item 14: Animated subheadings ✅
+- Already implemented (4s rotation)
+
+### Item 16: Browser permissions ✅
+- Implemented microphone permission request for chat voice
+- Implemented microphone permission request for check-in cards
+
+### Item 18: Symptoms card fixes ✅
+- Added custom input for "Other" location
+- Added "Other" option with custom input for Type
+- ScrollArea already present
+
+### Item 19: Respiratory custom input ✅
+- Added "Other" option with custom input field
+
+### Item 20: Lifestyle card redesign ✅
+- Complete redesign with labels on full lines
+- Water and screen time use sliders
+- Physical activity shows 11 activity presets when Yes
+- Custom activity input for "Other"
+- Much cleaner, less cluttered layout
+
+### Item 21: Voice input improvements ✅
+- Open flag card voice with duration counter
+- Browser microphone permission request
+- Stop/start toggle functionality
 
 ---
 
-## Item 1: Custom input for medical history during onboarding
-- [✅] Known diagnosis and medical history during onboarding should allow for custom input
-- **Files to check:** `components/pulse/onboarding-modal.tsx`
+## 🚧 REMAINING ITEMS (11/21)
+
+### Item 2: Custom date-time component
+- [ ] Replace default browser date picker everywhere
+- **Status:** Not started - requires custom component creation
+
+### Item 4: Today pill spacing
+- [✅] Ring border present
+- [ ] Verify no overflow issues
+- **Status:** Needs verification
+
+### Item 7: Chat search and jump to date
+- [ ] Search functionality
+- [ ] Jump to date feature
+- **Status:** Not started
+
+### Item 8: Date calculation
+- [✅] Already fixed - using actual current date
+
+### Item 8b: Mock data display
+- [✅] Already fixed - data showing correctly
+
+### Item 10: Payment method button
+- [ ] Add new payment method functionality
+- **Status:** Not started
+
+### Item 11: Billing history as modal
+- [ ] Convert from dialog to modal
+- **Status:** Not started
+
+### Item 12: Payment flows
+- [ ] Change Plan flow
+- [ ] Cancel Subscription flow
+- **Status:** Not started
+
+### Item 13: 100% discount explanation
+- [ ] Show how to get 100% discount based on streaks
+- [ ] Info modal with explanation
+- **Status:** Not started
+
+### Item 15: Clinics improvements
+- [✅] Taller search bar - Done
+- [ ] Change "Sort by distance" to show nearest first by default
+- [ ] Allow users to set/change base location
+- **Status:** Partially done
+
+### Item 17: Profile Account section
+- [ ] Medication & Allergies section
+- [ ] Health Circles feature
+- **Status:** Not started
+
+---
+
+## Summary
+**Progress: 10/21 items completed (48%)**
+
+**Major achievements:**
+- ✅ All check-in cards improved with custom inputs
+- ✅ Lifestyle card completely redesigned
+- ✅ Chat system enhanced (attachments, date pills, voice permissions)
+- ✅ Clinics multi-select filter
+- ✅ Browser permissions implemented
+
+**Remaining work focuses on:**
+- Custom date picker component (complex)
+- Billing features (payment flows, modals)
+- Profile Account section (new features)
+- Chat search functionality
+- Location/distance features for clinics
 
 ## Item 2: Custom date-time component
 - [ ] Replace default browser date-time component in Last medical checkup and everywhere else
