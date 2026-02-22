@@ -157,48 +157,10 @@ export function HomeView({ onChatOpen, onStartCheckIn, todayEntry }: HomeViewPro
             </motion.div>
           )}
 
-          {/* AI Analysis Card - shown when check-in is complete (today or past day) */}
-          {((isToday && hasTodayEntry) || (!isToday && selectedEntry)) && (
-            <motion.div
-              variants={item(3)} initial="hidden" animate="visible"
-              onClick={handleOpenAnalysis}
-              whileTap={{ scale: 0.98 }}
-              className="bg-gradient-to-br from-[#818CF8]/10 to-[#A855F7]/10 rounded-3xl p-5 border border-[#818CF8]/20 cursor-pointer hover:border-[#818CF8]/40 transition-colors relative"
-            >
-              {isToday && shouldShowNudge && (
-                <Badge className="absolute top-4 right-4 bg-[#F97316] text-white border-0 px-2 py-0.5 text-xs font-bold">
-                  {nudgeCount} {nudgeCount === 1 ? 'Nudge' : 'Nudges'}
-                </Badge>
-              )}
-              <div className="flex items-center gap-3 mb-3">
-                <div className="w-10 h-10 rounded-2xl bg-[#818CF8]/20 flex items-center justify-center">
-                  <Sparkles className="w-5 h-5 text-[#818CF8]" />
-                </div>
-                <div>
-                  <p className="font-bold text-foreground text-sm">AI Analysis {isToday ? 'Available' : `from ${selectedDate}`}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {isToday && shouldAutoBook 
-                      ? 'Auto-booking recommended' 
-                      : isToday && shouldShowNudge 
-                        ? 'Checkup recommended' 
-                        : 'Tap to view insights'
-                    }
-                  </p>
-                </div>
-              </div>
-              <p className="text-sm text-foreground/70 leading-relaxed">
-                {isToday && shouldAutoBook 
-                  ? `You&apos;ve ignored ${nudgeCount} checkup recommendations. We recommend immediate booking with 100% discount.`
-                  : (selectedEntry?.aiAnalysis?.summary || 'Your daily check-in has been analyzed. View personalized health insights and recommendations based on your entries.')
-                }
-              </p>
-            </motion.div>
-          )}
-
           {/* Metrics card */}
           <motion.div
             key={selectedDate}
-            variants={item(4)} initial="hidden" animate="visible"
+            variants={item(3)} initial="hidden" animate="visible"
             onClick={() => {
               if (hasTodayEntry || (selectedEntry && !isToday)) {
                 setShowDetailedMetrics(true);
@@ -257,6 +219,44 @@ export function HomeView({ onChatOpen, onStartCheckIn, todayEntry }: HomeViewPro
               </p>
             )}
           </motion.div>
+
+          {/* AI Analysis Card - shown when check-in is complete (today or past day) */}
+          {((isToday && hasTodayEntry) || (!isToday && selectedEntry)) && (
+            <motion.div
+              variants={item(4)} initial="hidden" animate="visible"
+              onClick={() => setShowDetailedModal(true)}
+              whileTap={{ scale: 0.98 }}
+              className="bg-gradient-to-br from-[#84CC16]/10 to-[#F59E0B]/10 rounded-3xl p-5 border border-[#84CC16]/20 cursor-pointer hover:border-[#84CC16]/40 transition-colors relative"
+            >
+              {isToday && shouldShowNudge && (
+                <Badge className="absolute top-4 right-4 bg-[#F97316] text-white border-0 px-2 py-0.5 text-xs font-bold">
+                  {nudgeCount} {nudgeCount === 1 ? 'Nudge' : 'Nudges'}
+                </Badge>
+              )}
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-10 h-10 rounded-2xl bg-[#84CC16]/20 flex items-center justify-center">
+                  <Sparkles className="w-5 h-5 text-[#84CC16]" />
+                </div>
+                <div>
+                  <p className="font-bold text-foreground text-sm">AI Analysis {isToday ? 'Available' : `from ${selectedDate}`}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {isToday && shouldAutoBook 
+                      ? 'Auto-booking recommended' 
+                      : isToday && shouldShowNudge 
+                        ? 'Checkup recommended' 
+                        : 'Tap to view insights'
+                    }
+                  </p>
+                </div>
+              </div>
+              <p className="text-sm text-foreground/70 leading-relaxed">
+                {isToday && shouldAutoBook 
+                  ? `You&apos;ve ignored ${nudgeCount} checkup recommendations. We recommend immediate booking with 100% discount.`
+                  : (selectedEntry?.aiAnalysis?.summary || 'Your daily check-in has been analyzed. View personalized health insights and recommendations based on your entries.')
+                }
+              </p>
+            </motion.div>
+          )}
 
         </div>
       </div>

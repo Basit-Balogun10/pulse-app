@@ -26,9 +26,9 @@ export function useDemoRunner() {
 
     // Check URL parameter
     const params = new URLSearchParams(window.location.search);
-    if (params.get('demo') === 'auto') {
+    if (params.get('auto') === 'demo') {
       console.log('🎬 Auto-starting demo from URL parameter');
-      startDemo();
+      setTimeout(() => startDemo(), 1000); // Wait for components to mount
     }
 
     // Keyboard shortcut listener

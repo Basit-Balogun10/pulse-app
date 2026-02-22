@@ -160,7 +160,7 @@ export function OnboardingModal({ isOpen, onSave }: OnboardingModalProps) {
 
                   {step === 1 && (
                     <>
-                      <SelectGroup label="Sex *" options={['Male', 'Female', 'Other', 'Prefer not to say']} value={form.sex} onChange={(v) => set('sex', v)} />
+                      <SelectGroup label="Sex *" options={['Male', 'Female', 'Prefer not to say']} value={form.sex} onChange={(v) => set('sex', v)} />
                       <div className="grid grid-cols-2 gap-3">
                         <Field label="Height (cm) *" type="number" name="height" value={form.height} onChange={handleChange} placeholder="168" />
                         <Field label="Weight (kg) *" type="number" name="weight" value={form.weight} onChange={handleChange} placeholder="65" />

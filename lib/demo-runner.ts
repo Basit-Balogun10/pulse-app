@@ -56,7 +56,9 @@ export class DemoRunner {
     await this.wait(2000);
     
     // Look for onboarding elements
-    const continueButton = document.querySelector('button[type="submit"], button:has-text("Continue"), button:has-text("Get Started")');
+    const continueButton = Array.from(document.querySelectorAll('button[type="submit"], button')).find(
+      btn => btn.textContent?.includes('Continue') || btn.textContent?.includes('Get Started')
+    );
     
     if (continueButton) {
       this.log('✓ Onboarding screen detected');

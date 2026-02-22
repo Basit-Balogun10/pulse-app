@@ -1,8 +1,10 @@
 'use client';
 
+import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { X, TrendingDown, Moon, Activity, UtensilsCrossed, Thermometer, Heart, Calendar, AlertTriangle } from 'lucide-react';
+import { X, TrendingDown, Moon, Activity, UtensilsCrossed, Thermometer, Heart, Calendar, AlertTriangle, ChevronDown } from 'lucide-react';
 import { amaraDay15DetailedAnalysis, amaraProfile } from '@/lib/amara-story-data';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
 interface DetailedAnalysisModalProps {
   isOpen: boolean;
@@ -10,6 +12,16 @@ interface DetailedAnalysisModalProps {
 }
 
 export function DetailedAnalysisModal({ isOpen, onClose }: DetailedAnalysisModalProps) {
+  const [openSections, setOpenSections] = useState<string[]>(['summary', 'energy', 'sleep']);
+
+  const toggleSection = (section: string) => {
+    setOpenSections(prev => 
+      prev.includes(section) 
+        ? prev.filter(s => s !== section)
+        : [...prev, section]
+    );
+  };
+
   if (!isOpen) return null;
 
   const analysis = amaraDay15DetailedAnalysis;
@@ -82,12 +94,16 @@ export function DetailedAnalysisModal({ isOpen, onClose }: DetailedAnalysisModal
           </div>
 
           {/* Energy Decline */}
-          <div className="bg-muted/50 rounded-2xl p-4">
-            <h3 className="font-bold text-foreground mb-3 flex items-center gap-2">
-              <TrendingDown className="w-5 h-5 text-[#F97316]" />
-              Energy Decline
-            </h3>
-            <div className="space-y-2 text-sm">
+          <Collapsible open={openSections.includes('energy')} onOpenChange={() => toggleSection('energy')}>
+            <CollapsibleTrigger className="w-full bg-muted/50 rounded-2xl p-4 flex items-center justify-between hover:bg-muted/70 transition-colors">
+              <h3 className="font-bold text-foreground flex items-center gap-2">
+                <TrendingDown className="w-5 h-5 text-[#F97316]" />
+                Energy Decline
+              </h3>
+              <ChevronDown className={`w-5 h-5 text-muted-foreground transition-transform ${openSections.includes('energy') ? 'rotate-180' : ''}`} />
+            </CollapsibleTrigger>
+            <CollapsibleContent className="bg-muted/50 rounded-b-2xl px-4 pb-4">
+              <div className="space-y-2 text-sm mt-3">
               <div className="flex items-center justify-between">
                 <span className="text-muted-foreground">Days 1-3:</span>
                 <span className="font-semibold text-foreground">Average {analysis.energyDecline.days1to3.average}/5 ({analysis.energyDecline.days1to3.status})</span>
@@ -108,15 +124,20 @@ export function DetailedAnalysisModal({ isOpen, onClose }: DetailedAnalysisModal
                 <p className="text-xs text-foreground"><strong>Assessment:</strong> {analysis.energyDecline.assessment}</p>
               </div>
             </div>
-          </div>
+            </CollapsibleContent>
+          </Collapsible>
 
           {/* Sleep Disruption */}
-          <div className="bg-muted/50 rounded-2xl p-4">
-            <h3 className="font-bold text-foreground mb-3 flex items-center gap-2">
-              <Moon className="w-5 h-5 text-[#818CF8]" />
-              Sleep Disruption
-            </h3>
-            <div className="space-y-2 text-sm">
+          <Collapsible open={openSections.includes('sleep')} onOpenChange={() => toggleSection('sleep')}>
+            <CollapsibleTrigger className="w-full bg-muted/50 rounded-2xl p-4 flex items-center justify-between hover:bg-muted/70 transition-colors">
+              <h3 className="font-bold text-foreground flex items-center gap-2">
+                <Moon className="w-5 h-5 text-[#818CF8]" />
+                Sleep Disruption
+              </h3>
+              <ChevronDown className={`w-5 h-5 text-muted-foreground transition-transform ${openSections.includes('sleep') ? 'rotate-180' : ''}`} />
+            </CollapsibleTrigger>
+            <CollapsibleContent className="bg-muted/50 rounded-b-2xl px-4 pb-4">
+              <div className="space-y-2 text-sm mt-3">
               <div className="flex items-center justify-between">
                 <span className="text-muted-foreground">Days 1-3:</span>
                 <span className="font-semibold text-foreground">{analysis.sleepDisruption.days1to3.range} ({analysis.sleepDisruption.days1to3.quality})</span>
@@ -145,7 +166,8 @@ export function DetailedAnalysisModal({ isOpen, onClose }: DetailedAnalysisModal
                 <p className="text-xs text-foreground"><strong>Assessment:</strong> {analysis.sleepDisruption.assessment}</p>
               </div>
             </div>
-          </div>
+            </CollapsibleContent>
+          </Collapsible>
 
           {/* Physical Symptoms - Lower Abdomen */}
           <div className="bg-muted/50 rounded-2xl p-4">
