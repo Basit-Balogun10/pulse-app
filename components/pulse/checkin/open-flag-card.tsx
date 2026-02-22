@@ -179,6 +179,7 @@ export function OpenFlagCard({ onValue, onNext }: Props) {
       >
         Skip
       </motion.button>
+      </div>
     </div>
   );
 }
