@@ -3,7 +3,7 @@ import { v } from "convex/values";
 import { api } from "./_generated/api";
 
 const GEMINI_API_URL =
-  "https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash:generateContent";
+  "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
 
 async function callGemini(prompt: string, apiKey: string): Promise<string> {
   const response = await fetch(`${GEMINI_API_URL}?key=${apiKey}`, {
