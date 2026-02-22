@@ -1,9 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MapPin, Star, Clock, CheckCircle, Copy, X, ChevronRight, Search, Filter, SlidersHorizontal, Sparkles, Map, Navigation } from 'lucide-react';
-import { clinics } from '@/lib/mock-data';
+import { MapPin, Star, Clock, CheckCircle, Copy, X, ChevronRight, Search, Filter, SlidersHorizontal, Sparkles, Map } from 'lucide-react';
+import { useQuery, useMutation } from 'convex/react';
+import { api } from '@/convex/_generated/api';
+import { clinics as mockClinics } from '@/lib/mock-data';
 import { amaraFullStory } from '@/lib/amara-story-data';
 import { Input } from '@/components/ui/input';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
@@ -13,7 +15,7 @@ import { ClinicMap } from '../clinic-map';
 import { PaymentModal } from '../payment-modal';
 
 interface ClinicDetailsProps {
-  clinic: (typeof clinics)[0];
+  clinic: (typeof mockClinics)[0];
   onClose: () => void;
   onViewMap: () => void;
   onBook: () => void;
@@ -120,63 +122,33 @@ function ClinicDetails({ clinic, onClose, onViewMap, onBook }: ClinicDetailsProp
 }
 
 export function ClinicsView() {
-  const [selectedClinic, setSelectedClinic] = useState<(typeof clinics)[0] | null>(null);
+  const [selectedClinic, setSelectedClinic] = useState<(typeof mockClinics)[0] | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [maxDistance, setMaxDistance] = useState(10);
   const [minRating, setMinRating] = useState(0);
-  const [selectedSpecialties, setSelectedSpecialties] = useState<string[]>([]);
+  const [selectedSpecialty, setSelectedSpecialty] = useState<string>('all');
   const [sortBy, setSortBy] = useState<'distance' | 'rating' | 'discount'>('distance');
   const [filtersOpen, setFiltersOpen] = useState(false);
-  const [mapClinic, setMapClinic] = useState<(typeof clinics)[0] | null>(null);
-  const [paymentClinic, setPaymentClinic] = useState<(typeof clinics)[0] | null>(null);
-  const [userLocation, setUserLocation] = useState<string>('');
-  const [showLocationPicker, setShowLocationPicker] = useState(false);
-  const [customLocation, setCustomLocation] = useState<string>('');
+  const [mapClinic, setMapClinic] = useState<(typeof mockClinics)[0] | null>(null);
+  const [paymentClinic, setPaymentClinic] = useState<(typeof mockClinics)[0] | null>(null);
 
-  // Get user's geolocation on mount if no custom location
-  useEffect(() => {
-    const savedLocation = localStorage.getItem('userCustomLocation');
-    if (savedLocation) {
-      setCustomLocation(savedLocation);
-      setUserLocation(savedLocation);
-    } else if ('geolocation' in navigator) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const { latitude, longitude } = position.coords;
-          setUserLocation(`${latitude.toFixed(4)}, ${longitude.toFixed(4)}`);
-        },
-        () => {
-          setUserLocation('Location unavailable');
-        }
-      );
-    }
-  }, []);
-
-  const handleSetLocation = () => {
-    if (customLocation.trim()) {
-      localStorage.setItem('userCustomLocation', customLocation.trim());
-      setUserLocation(customLocation.trim());
-      setShowLocationPicker(false);
-    }
-  };
-
-  const handleUseCurrentLocation = () => {
-    if ('geolocation' in navigator) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const { latitude, longitude } = position.coords;
-          const coords = `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
-          setUserLocation(coords);
-          setCustomLocation('');
-          localStorage.removeItem('userCustomLocation');
-          setShowLocationPicker(false);
-        },
-        (error) => {
-          alert('Unable to get your location. Please check permissions.');
-        }
-      );
-    }
-  };
+  // Convex: real clinic data, fallback to mock while DB is empty
+  const convexClinics = useQuery(api.clinics.list, {});
+  const bookAppointment = useMutation(api.appointments.book);
+  const allClinics: (typeof mockClinics) = (convexClinics && convexClinics.length > 0
+    ? convexClinics.map((c: any) => ({
+        id: c._id,
+        name: c.name,
+        specialty: c.specialty,
+        distance: c.distance,
+        rating: c.rating,
+        discount: c.discount,
+        discountCode: c.discountCode,
+        address: c.address,
+        phone: c.phone,
+        hours: c.hours,
+      }))
+    : mockClinics) as typeof mockClinics;
 
   // Get today's AI analysis for context banner
   const todayEntry = amaraFullStory[amaraFullStory.length - 1];
@@ -191,16 +163,16 @@ export function ClinicsView() {
   );
 
   // Get unique specialties
-  const specialties = Array.from(new Set(clinics.map(c => c.specialty)));
+  const specialties = ['all', ...Array.from(new Set(allClinics.map(c => c.specialty)))];
 
   // Filter clinics
-  const filteredClinics = clinics
+  const filteredClinics = allClinics
     .filter(clinic => {
       const matchesSearch = clinic.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                            clinic.specialty.toLowerCase().includes(searchQuery.toLowerCase());
       const matchesDistance = clinic.distance <= maxDistance;
       const matchesRating = clinic.rating >= minRating;
-      const matchesSpecialty = selectedSpecialties.length === 0 || selectedSpecialties.includes(clinic.specialty);
+      const matchesSpecialty = selectedSpecialty === 'all' || clinic.specialty === selectedSpecialty;
       return matchesSearch && matchesDistance && matchesRating && matchesSpecialty;
     })
     .sort((a, b) => {
@@ -219,14 +191,9 @@ export function ClinicsView() {
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-2xl font-bold text-foreground">Partner Clinics</h2>
-            <motion.button
-              whileTap={{ scale: 0.95 }}
-              onClick={() => setShowLocationPicker(true)}
-              className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1 hover:text-[#84CC16] transition-colors"
-            >
-              <MapPin className="w-3 h-3" />
-              {userLocation || 'Set your location'}
-            </motion.button>
+            <p className="text-sm text-muted-foreground mt-0.5">
+              {filteredClinics.length} clinic{filteredClinics.length !== 1 ? 's' : ''} available
+            </p>
           </div>
           
           {/* Filter Sheet */}
@@ -236,11 +203,11 @@ export function ClinicsView() {
                 <SlidersHorizontal className="h-5 w-5" />
               </Button>
             </SheetTrigger>
-            <SheetContent side="bottom" className="h-[85vh] rounded-t-3xl">
-              <SheetHeader className="px-2">
+            <SheetContent side="bottom" className="h-[85vh]">
+              <SheetHeader>
                 <SheetTitle>Filter & Sort</SheetTitle>
               </SheetHeader>
-              <div className="py-6 px-2 space-y-6">
+              <div className="py-6 space-y-6">
                 {/* Sort By */}
                 <div>
                   <label className="text-sm font-semibold text-foreground mb-3 block">Sort By</label>
@@ -297,30 +264,21 @@ export function ClinicsView() {
 
                 {/* Specialty Filter */}
                 <div>
-                  <label className="text-sm font-semibold text-foreground mb-3 block">Specialties (Multi-select)</label>
-                  <div className="flex gap-2 overflow-x-auto pb-2 -mx-2 px-2">
-                    {specialties.map((specialty) => {
-                      const isSelected = selectedSpecialties.includes(specialty);
-                      return (
-                        <button
-                          key={specialty}
-                          onClick={() => {
-                            setSelectedSpecialties(prev => 
-                              isSelected 
-                                ? prev.filter(s => s !== specialty)
-                                : [...prev, specialty]
-                            );
-                          }}
-                          className={`py-2 px-4 rounded-xl text-sm font-semibold transition-colors capitalize whitespace-nowrap ${
-                            isSelected
-                              ? 'bg-[#84CC16] text-white'
-                              : 'bg-muted text-foreground hover:bg-muted/70'
-                          }`}
-                        >
-                          {specialty}
-                        </button>
-                      );
-                    })}
+                  <label className="text-sm font-semibold text-foreground mb-3 block">Specialty</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {specialties.map((specialty) => (
+                      <button
+                        key={specialty}
+                        onClick={() => setSelectedSpecialty(specialty)}
+                        className={`py-2 px-3 rounded-xl text-sm font-semibold transition-colors capitalize ${
+                          selectedSpecialty === specialty
+                            ? 'bg-[#84CC16] text-white'
+                            : 'bg-muted text-foreground hover:bg-muted/70'
+                        }`}
+                      >
+                        {specialty}
+                      </button>
+                    ))}
                   </div>
                 </div>
 
@@ -331,7 +289,7 @@ export function ClinicsView() {
                     onClick={() => {
                       setMaxDistance(10);
                       setMinRating(0);
-                      setSelectedSpecialties([]);
+                      setSelectedSpecialty('all');
                       setSortBy('distance');
                     }}
                     className="flex-1"
@@ -352,13 +310,13 @@ export function ClinicsView() {
 
         {/* Search Bar */}
         <div className="relative">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
             type="text"
             placeholder="Search clinics or specialties..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-12 py-6 rounded-2xl border-2 focus-visible:ring-[#84CC16] text-base"
+            className="pl-10 rounded-2xl border-2 focus-visible:ring-[#84CC16]"
           />
         </div>
 
@@ -496,90 +454,6 @@ export function ClinicsView() {
               console.log('Booking successful!');
             }}
           />
-        )}
-      </AnimatePresence>
-
-      {/* Location Picker Modal */}
-      <AnimatePresence>
-        {showLocationPicker && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4"
-            onClick={() => setShowLocationPicker(false)}
-          >
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              onClick={(e) => e.stopPropagation()}
-              className="bg-background rounded-3xl overflow-hidden w-full max-w-md"
-            >
-              <div className="px-6 py-4 border-b border-border flex items-center justify-between">
-                <h3 className="text-lg font-bold text-foreground">Set Your Location</h3>
-                <motion.button
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => setShowLocationPicker(false)}
-                  className="w-9 h-9 rounded-full bg-muted flex items-center justify-center"
-                >
-                  <X className="w-5 h-5 text-foreground" />
-                </motion.button>
-              </div>
-              <div className="p-6 space-y-4">
-                <p className="text-sm text-muted-foreground">
-                  Set your location to find the nearest clinics and get accurate distance estimates.
-                </p>
-                
-                <div>
-                  <label className="text-xs text-muted-foreground font-semibold mb-2 block">
-                    Custom Location (City, Address, or Coordinates)
-                  </label>
-                  <input
-                    type="text"
-                    value={customLocation}
-                    onChange={(e) => setCustomLocation(e.target.value)}
-                    placeholder="e.g. Lagos, Nigeria or 6.5244, 3.3792"
-                    className="w-full px-4 py-3 rounded-xl border-2 border-border bg-card text-foreground focus:border-[#84CC16] outline-none transition-colors"
-                  />
-                </div>
-
-                <motion.button
-                  whileTap={{ scale: 0.97 }}
-                  onClick={handleSetLocation}
-                  disabled={!customLocation.trim()}
-                  className="w-full py-3 rounded-2xl bg-[#84CC16] text-white font-bold text-sm hover:bg-[#84CC16]/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Set Location
-                </motion.button>
-
-                <div className="relative">
-                  <div className="absolute inset-0 flex items-center">
-                    <div className="w-full border-t border-border"></div>
-                  </div>
-                  <div className="relative flex justify-center text-xs uppercase">
-                    <span className="bg-background px-2 text-muted-foreground">Or</span>
-                  </div>
-                </div>
-
-                <motion.button
-                  whileTap={{ scale: 0.97 }}
-                  onClick={handleUseCurrentLocation}
-                  className="w-full py-3 rounded-2xl border-2 border-border text-foreground font-semibold text-sm hover:border-[#84CC16]/40 transition-colors flex items-center justify-center gap-2"
-                >
-                  <Navigation className="w-4 h-4" />
-                  Use Current Location
-                </motion.button>
-
-                {userLocation && (
-                  <div className="bg-muted rounded-2xl p-3">
-                    <p className="text-xs text-muted-foreground mb-1">Current Location:</p>
-                    <p className="text-sm font-semibold text-foreground">{userLocation}</p>
-                  </div>
-                )}
-              </div>
-            </motion.div>
-          </motion.div>
         )}
       </AnimatePresence>
     </div>

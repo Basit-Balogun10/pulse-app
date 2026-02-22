@@ -1,30 +1,53 @@
 'use client';
 
-import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { X, TrendingDown, Moon, Activity, UtensilsCrossed, Thermometer, Heart, Calendar, AlertTriangle, ChevronDown } from 'lucide-react';
-import { amaraDay15DetailedAnalysis, amaraProfile } from '@/lib/amara-story-data';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { X, TrendingDown, Moon, Activity, UtensilsCrossed, Thermometer, Heart, AlertTriangle, Sparkles, Calendar } from 'lucide-react';
+import { useQuery } from 'convex/react';
+import { api } from '@/convex/_generated/api';
 
 interface DetailedAnalysisModalProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-export function DetailedAnalysisModal({ isOpen, onClose }: DetailedAnalysisModalProps) {
-  const [openSections, setOpenSections] = useState<string[]>(['summary']);
+const CONCERN_COLORS: Record<string, { bg: string; text: string; border: string }> = {
+  low: { bg: 'bg-[#84CC16]/10', text: 'text-[#84CC16]', border: 'border-[#84CC16]/30' },
+  medium: { bg: 'bg-[#FBBF24]/10', text: 'text-[#FBBF24]', border: 'border-[#FBBF24]/30' },
+  high: { bg: 'bg-[#F97316]/10', text: 'text-[#F97316]', border: 'border-[#F97316]/30' },
+  critical: { bg: 'bg-[#EF4444]/10', text: 'text-[#EF4444]', border: 'border-[#EF4444]/30' },
+};
 
-  const toggleSection = (section: string) => {
-    setOpenSections(prev => 
-      prev.includes(section) 
-        ? prev.filter(s => s !== section)
-        : [...prev, section]
-    );
-  };
+export function DetailedAnalysisModal({ isOpen, onClose }: DetailedAnalysisModalProps) {
+  const TODAY = new Date().toISOString().split('T')[0];
+  const todayEntry = useQuery(api.healthEntries.getToday, { date: TODAY });
+  const history = useQuery(api.healthEntries.getHistory, { limit: 7 }) ?? [];
+  const profile = useQuery(api.users.getProfile);
 
   if (!isOpen) return null;
 
-  const analysis = amaraDay15DetailedAnalysis;
+  const ai = (todayEntry as any)?.aiAnalysis ?? null;
+  const entry = todayEntry as any;
+  const concernLevel = ai?.concernLevel?.toLowerCase() ?? 'low';
+  const concernStyle = CONCERN_COLORS[concernLevel] ?? CONCERN_COLORS.low;
+
+  // Build last-7-days energy trend
+  const energyTrend = (history as any[])
+    .slice()
+    .reverse()
+    .map((e) => ({ date: e.date, energy: e.energy ?? 0, mood: e.mood ?? 0 }));
+
+  // Flatten symptoms text
+  const symptoms = entry?.symptoms;
+  const hasSymptoms =
+    symptoms && (symptoms.location || symptoms.type || symptoms.intensity);
+
+  const respiratory: string[] = entry?.respiratory ?? [];
+  const temperature = entry?.temperature;
+  const hasFever = temperature?.fever === true || temperature?.fever === 'yes';
+  const tempValue = temperature?.temp ?? null;
+
+  const conditions: string[] = profile?.medicalConditions ?? [];
+  const familyHistory: string[] = profile?.familyHistory ?? [];
 
   return (
     <>
@@ -52,7 +75,9 @@ export function DetailedAnalysisModal({ isOpen, onClose }: DetailedAnalysisModal
         <div className="px-6 pt-2 pb-4 flex items-center justify-between border-b border-border">
           <div>
             <h2 className="text-xl font-bold text-foreground">Detailed Health Analysis</h2>
-            <p className="text-sm text-muted-foreground">14-day pattern assessment</p>
+            <p className="text-sm text-muted-foreground">
+              {TODAY} · {history.length}-day pattern
+            </p>
           </div>
           <motion.button
             whileTap={{ scale: 0.95 }}
@@ -64,228 +89,282 @@ export function DetailedAnalysisModal({ isOpen, onClose }: DetailedAnalysisModal
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto px-6 py-4 space-y-3">
-          {/* Pattern Detection Summary */}
-          <Collapsible open={openSections.includes('summary')} onOpenChange={() => toggleSection('summary')}>
-            <CollapsibleTrigger className="w-full bg-card rounded-2xl p-4 border border-border flex items-center justify-between hover:bg-muted/50 transition-colors">
-              <h3 className="font-bold text-foreground flex items-center gap-2">
-                <Calendar className="w-5 h-5 text-[#84CC16]" />
-                Pattern Detection Summary
+        <div className="flex-1 overflow-y-auto px-6 py-4 space-y-5">
+
+          {/* No analysis yet state */}
+          {!ai && (
+            <div className="bg-muted/50 rounded-2xl p-6 text-center">
+              <Sparkles className="w-8 h-8 text-[#818CF8] mx-auto mb-2" />
+              <p className="text-sm font-semibold text-foreground mb-1">AI Analysis In Progress</p>
+              <p className="text-xs text-muted-foreground">
+                Your analysis is being generated. Check back in a moment.
+              </p>
+            </div>
+          )}
+
+          {/* AI Overview + Concern Level */}
+          {ai?.overview && (
+            <div className={`rounded-2xl p-4 border ${concernStyle.bg} ${concernStyle.border}`}>
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="font-bold text-foreground flex items-center gap-2">
+                  <Sparkles className="w-5 h-5 text-[#818CF8]" />
+                  AI Overview
+                </h3>
+                {ai.concernLevel && (
+                  <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${concernStyle.bg} ${concernStyle.text}`}>
+                    {ai.concernLevel} concern
+                  </span>
+                )}
+              </div>
+              <p className="text-sm text-foreground leading-relaxed">{ai.overview}</p>
+            </div>
+          )}
+
+          {/* Detected Patterns */}
+          {ai?.patternsDetected && ai.patternsDetected.length > 0 && (
+            <div className="bg-muted/50 rounded-2xl p-4">
+              <h3 className="font-bold text-foreground mb-3 flex items-center gap-2">
+                <Calendar className="w-5 h-5 text-[#818CF8]" />
+                Detected Patterns
               </h3>
-              <ChevronDown className={`w-5 h-5 text-muted-foreground transition-transform ${openSections.includes('summary') ? 'rotate-180' : ''}`} />
-            </CollapsibleTrigger>
-            <CollapsibleContent className="bg-card border-x border-b border-border rounded-b-2xl px-4 pb-4">
-              <div className="space-y-2 mt-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Duration:</span>
-                  <span className="text-sm font-semibold text-foreground">{analysis.patternDetectionSummary.duration}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Escalation:</span>
-                  <span className="text-sm font-semibold text-[#F97316]">{analysis.patternDetectionSummary.escalationNoted}</span>
-                </div>
-                <div className="mt-3">
-                  <span className="text-xs font-semibold text-muted-foreground uppercase mb-2 block">Concerning Metrics</span>
-                  <div className="flex flex-wrap gap-1.5">
-                    {analysis.patternDetectionSummary.concerningMetrics.map((metric) => (
-                      <span key={metric} className="px-2.5 py-1 bg-[#F97316]/10 text-[#F97316] text-xs font-medium rounded-full border border-[#F97316]/20">
-                        {metric}
-                      </span>
-                    ))}
+              <div className="space-y-2">
+                {(ai.patternsDetected as string[]).map((pattern: string, i: number) => (
+                  <div key={i} className="flex items-start gap-2">
+                    <div className="w-1.5 h-1.5 rounded-full bg-[#818CF8] mt-1.5 shrink-0" />
+                    <p className="text-sm text-foreground">{pattern}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Today's Metrics */}
+          {entry && (
+            <div className="bg-muted/50 rounded-2xl p-4">
+              <h3 className="font-bold text-foreground mb-3 flex items-center gap-2">
+                <Activity className="w-5 h-5 text-[#F97316]" />
+                Today&apos;s Metrics
+              </h3>
+              <div className="grid grid-cols-2 gap-3">
+                {[
+                  { label: 'Energy', value: entry.energy != null ? `${entry.energy}/5` : '—', emoji: '⚡' },
+                  { label: 'Mood', value: entry.mood != null ? `${entry.mood}/5` : '—', emoji: '😊' },
+                  { label: 'Sleep', value: entry.sleep?.quality ?? '—', emoji: '🌙' },
+                  { label: 'Appetite', value: entry.appetite?.appetite ?? '—', emoji: '🍽️' },
+                ].map(({ label, value, emoji }) => (
+                  <div key={label} className="bg-background rounded-xl p-3">
+                    <p className="text-xs text-muted-foreground mb-1">{emoji} {label}</p>
+                    <p className="text-base font-bold text-foreground capitalize">{value}</p>
+                  </div>
+                ))}
+              </div>
+              {entry.lifestyle && (
+                <div className="mt-3 pt-3 border-t border-border grid grid-cols-3 gap-2 text-xs text-center text-muted-foreground">
+                  <div>
+                    <p className="font-semibold text-foreground">{entry.lifestyle.water ?? '—'}</p>
+                    <p>Water</p>
+                  </div>
+                  <div>
+                    <p className="font-semibold text-foreground capitalize">{entry.lifestyle.exercise ?? '—'}</p>
+                    <p>Exercise</p>
+                  </div>
+                  <div>
+                    <p className="font-semibold text-foreground capitalize">{entry.lifestyle.medications ?? '—'}</p>
+                    <p>Medications</p>
                   </div>
                 </div>
-              </div>
-            </CollapsibleContent>
-          </Collapsible>
+              )}
+            </div>
+          )}
 
-          {/* Energy Decline */}
-          <Collapsible open={openSections.includes('energy')} onOpenChange={() => toggleSection('energy')}>
-            <CollapsibleTrigger className="w-full bg-card rounded-2xl p-4 border border-border flex items-center justify-between hover:bg-muted/50 transition-colors">
-              <h3 className="font-bold text-foreground flex items-center gap-2">
+          {/* Symptoms */}
+          {(hasSymptoms || respiratory.length > 0 || hasFever) && (
+            <div className="bg-muted/50 rounded-2xl p-4">
+              <h3 className="font-bold text-foreground mb-3 flex items-center gap-2">
+                <Thermometer className="w-5 h-5 text-[#EF4444]" />
+                Reported Symptoms
+              </h3>
+              <div className="space-y-2 text-sm">
+                {hasSymptoms && (
+                  <div className="flex items-start gap-2">
+                    <div className="w-1.5 h-1.5 rounded-full bg-orange-500 mt-1.5 shrink-0" />
+                    <p className="text-foreground">
+                      {symptoms.type && <span className="capitalize">{symptoms.type}</span>}
+                      {symptoms.location && <span className="text-muted-foreground"> · {symptoms.location}</span>}
+                      {symptoms.intensity && <span className="text-muted-foreground"> · {symptoms.intensity} intensity</span>}
+                    </p>
+                  </div>
+                )}
+                {respiratory.map((r: string) => (
+                  <div key={r} className="flex items-start gap-2">
+                    <div className="w-1.5 h-1.5 rounded-full bg-[#818CF8] mt-1.5 shrink-0" />
+                    <p className="text-foreground capitalize">{r}</p>
+                  </div>
+                ))}
+                {hasFever && (
+                  <div className="flex items-start gap-2">
+                    <div className="w-1.5 h-1.5 rounded-full bg-red-500 mt-1.5 shrink-0" />
+                    <p className="text-foreground">
+                      Fever reported{tempValue ? ` · ${tempValue}°C` : ''}
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Sleep & Mood breakdown */}
+          {entry?.sleep && (
+            <div className="bg-muted/50 rounded-2xl p-4">
+              <h3 className="font-bold text-foreground mb-3 flex items-center gap-2">
+                <Moon className="w-5 h-5 text-[#818CF8]" />
+                Sleep Detail
+              </h3>
+              <div className="flex gap-4 text-sm">
+                <div>
+                  <p className="text-muted-foreground text-xs mb-1">Hours</p>
+                  <p className="font-bold text-foreground">{entry.sleep.hours ?? '—'}</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground text-xs mb-1">Quality</p>
+                  <p className="font-bold text-foreground capitalize">{entry.sleep.quality ?? '—'}</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Appetite & Digestion */}
+          {entry?.appetite && (
+            <div className="bg-muted/50 rounded-2xl p-4">
+              <h3 className="font-bold text-foreground mb-3 flex items-center gap-2">
+                <UtensilsCrossed className="w-5 h-5 text-[#F97316]" />
+                Appetite & Digestion
+              </h3>
+              <div className="flex gap-4 text-sm">
+                {entry.appetite.appetite && (
+                  <div>
+                    <p className="text-muted-foreground text-xs mb-1">Appetite</p>
+                    <p className="font-bold text-foreground capitalize">{entry.appetite.appetite}</p>
+                  </div>
+                )}
+                {entry.appetite.digestion && (
+                  <div>
+                    <p className="text-muted-foreground text-xs mb-1">Digestion</p>
+                    <p className="font-bold text-foreground capitalize">{entry.appetite.digestion}</p>
+                  </div>
+                )}
+                {entry.appetite.bowel && (
+                  <div>
+                    <p className="text-muted-foreground text-xs mb-1">Bowel</p>
+                    <p className="font-bold text-foreground capitalize">{entry.appetite.bowel}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Energy trend (last 7 days) */}
+          {energyTrend.length > 1 && (
+            <div className="bg-muted/50 rounded-2xl p-4">
+              <h3 className="font-bold text-foreground mb-3 flex items-center gap-2">
                 <TrendingDown className="w-5 h-5 text-[#84CC16]" />
-                Energy Decline
+                7-Day Energy Trend
               </h3>
-              <ChevronDown className={`w-5 h-5 text-muted-foreground transition-transform ${openSections.includes('energy') ? 'rotate-180' : ''}`} />
-            </CollapsibleTrigger>
-            <CollapsibleContent className="bg-card border-x border-b border-border rounded-b-2xl px-4 pb-4">
-              <div className="space-y-2 text-sm mt-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Days 1-3:</span>
-                  <span className="font-semibold text-foreground">{analysis.energyDecline.days1to3.average}/5</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Days 4-7:</span>
-                  <span className="font-semibold text-[#F97316]">{analysis.energyDecline.days4to7.average}/5</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Days 8-14:</span>
-                  <span className="font-semibold text-[#F97316]">{analysis.energyDecline.days8to14.average}/5</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Today:</span>
-                  <span className="font-semibold text-[#F97316]">{analysis.energyDecline.day15.value}/5</span>
-                </div>
-                <div className="mt-3 p-3 bg-muted rounded-xl">
-                  <p className="text-xs text-foreground">{analysis.energyDecline.assessment}</p>
-                </div>
-              </div>
-            </CollapsibleContent>
-          </Collapsible>
-
-          {/* Sleep Disruption */}
-          <Collapsible open={openSections.includes('sleep')} onOpenChange={() => toggleSection('sleep')}>
-            <CollapsibleTrigger className="w-full bg-card rounded-2xl p-4 border border-border flex items-center justify-between hover:bg-muted/50 transition-colors">
-              <h3 className="font-bold text-foreground flex items-center gap-2">
-                <Moon className="w-5 h-5 text-[#84CC16]" />
-                Sleep Pattern
-              </h3>
-              <ChevronDown className={`w-5 h-5 text-muted-foreground transition-transform ${openSections.includes('sleep') ? 'rotate-180' : ''}`} />
-            </CollapsibleTrigger>
-            <CollapsibleContent className="bg-card border-x border-b border-border rounded-b-2xl px-4 pb-4">
-              <div className="space-y-2 text-sm mt-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Days 1-3:</span>
-                  <span className="font-semibold text-foreground">{analysis.sleepDisruption.days1to3.range}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Days 4-7:</span>
-                  <span className="font-semibold text-[#F97316]">{analysis.sleepDisruption.days4to7.range}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Days 8-11:</span>
-                  <span className="font-semibold text-[#F97316]">{analysis.sleepDisruption.days8to11.range}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Days 12-15:</span>
-                  <span className="font-semibold text-[#F97316]">{analysis.sleepDisruption.days12to15.range}</span>
-                </div>
-                <div className="mt-3 p-3 bg-muted rounded-xl">
-                  <p className="text-xs text-foreground">{analysis.sleepDisruption.assessment}</p>
-                </div>
-              </div>
-            </CollapsibleContent>
-          </Collapsible>
-
-          {/* Physical Symptoms */}
-          <Collapsible open={openSections.includes('symptoms')} onOpenChange={() => toggleSection('symptoms')}>
-            <CollapsibleTrigger className="w-full bg-card rounded-2xl p-4 border border-border flex items-center justify-between hover:bg-muted/50 transition-colors">
-              <h3 className="font-bold text-foreground flex items-center gap-2">
-                <Activity className="w-5 h-5 text-[#84CC16]" />
-                Physical Symptoms
-              </h3>
-              <ChevronDown className={`w-5 h-5 text-muted-foreground transition-transform ${openSections.includes('symptoms') ? 'rotate-180' : ''}`} />
-            </CollapsibleTrigger>
-            <CollapsibleContent className="bg-card border-x border-b border-border rounded-b-2xl px-4 pb-4">
-              <div className="space-y-2 text-sm mt-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">First noted:</span>
-                  <span className="font-semibold text-foreground">Day {analysis.physicalSymptoms.lowerAbdomen.firstAppearance.day}</span>
-                </div>
-                <div className="mt-2">
-                  <p className="text-xs font-semibold text-muted-foreground mb-1.5">Pattern</p>
-                  <p className="text-xs text-foreground bg-muted p-2.5 rounded-lg">{analysis.physicalSymptoms.lowerAbdomen.pattern}</p>
-                </div>
-                <div className="mt-3 p-3 bg-muted rounded-xl">
-                  <p className="text-xs text-foreground">{analysis.physicalSymptoms.lowerAbdomen.assessment}</p>
-                </div>
-              </div>
-            </CollapsibleContent>
-          </Collapsible>
-
-          {/* Appetite & Temperature */}
-          <Collapsible open={openSections.includes('appetite')} onOpenChange={() => toggleSection('appetite')}>
-            <CollapsibleTrigger className="w-full bg-card rounded-2xl p-4 border border-border flex items-center justify-between hover:bg-muted/50 transition-colors">
-              <h3 className="font-bold text-foreground flex items-center gap-2">
-                <UtensilsCrossed className="w-5 h-5 text-[#84CC16]" />
-                Appetite & Temperature
-              </h3>
-              <ChevronDown className={`w-5 h-5 text-muted-foreground transition-transform ${openSections.includes('appetite') ? 'rotate-180' : ''}`} />
-            </CollapsibleTrigger>
-            <CollapsibleContent className="bg-card border-x border-b border-border rounded-b-2xl px-4 pb-4">
-              <div className="space-y-3 text-sm mt-3">
-                <div>
-                  <p className="text-xs font-semibold text-muted-foreground mb-2">Appetite Decline</p>
-                  <div className="space-y-1.5">
-                    <div className="flex items-center justify-between">
-                      <span className="text-muted-foreground text-xs">Early days:</span>
-                      <span className="font-medium text-foreground text-xs">{analysis.appetiteAndNutrition.days1to7.status}</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-muted-foreground text-xs">Recent:</span>
-                      <span className="font-medium text-[#F97316] text-xs">{analysis.appetiteAndNutrition.day15.status}</span>
-                    </div>
-                  </div>
-                </div>
-                <div className="border-t border-border pt-3">
-                  <p className="text-xs font-semibold text-muted-foreground mb-2">Temperature</p>
-                  <div className="space-y-1.5">
-                    <div className="flex items-center justify-between">
-                      <span className="text-muted-foreground text-xs">Days 1-14:</span>
-                      <span className="font-medium text-foreground text-xs">{analysis.temperature.days1to14.value}</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-muted-foreground text-xs">Today:</span>
-                      <span className="font-medium text-[#F97316] text-xs">{analysis.temperature.day15.value} (Fever)</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </CollapsibleContent>
-          </Collapsible>
-
-          {/* Mood & Risk Factors */}
-          <Collapsible open={openSections.includes('mood')} onOpenChange={() => toggleSection('mood')}>
-            <CollapsibleTrigger className="w-full bg-card rounded-2xl p-4 border border-border flex items-center justify-between hover:bg-muted/50 transition-colors">
-              <h3 className="font-bold text-foreground flex items-center gap-2">
-                <Heart className="w-5 h-5 text-[#84CC16]" />
-                Mood & Background
-              </h3>
-              <ChevronDown className={`w-5 h-5 text-muted-foreground transition-transform ${openSections.includes('mood') ? 'rotate-180' : ''}`} />
-            </CollapsibleTrigger>
-            <CollapsibleContent className="bg-card border-x border-b border-border rounded-b-2xl px-4 pb-4">
-              <div className="space-y-3 text-sm mt-3">
-                <div>
-                  <p className="text-xs font-semibold text-muted-foreground mb-1.5">Mood Trend</p>
-                  <p className="text-xs text-foreground bg-muted p-2.5 rounded-lg">{analysis.moodAndMentalHealth.assessment}</p>
-                </div>
-                <div className="border-t border-border pt-3">
-                  <p className="text-xs font-semibold text-muted-foreground mb-2">Risk Factors</p>
-                  <div className="space-y-1.5">
-                    {analysis.riskFactorsFromProfile.map((risk, idx) => (
-                      <div key={idx} className="flex items-start gap-2">
-                        <div className="w-1 h-1 rounded-full bg-[#F97316] mt-1.5" />
-                        <p className="text-xs text-foreground flex-1">{risk.factor}</p>
+              <div className="flex items-end gap-2 h-16">
+                {energyTrend.map((d, i) => {
+                  const heightPct = ((d.energy / 5) * 100).toFixed(0);
+                  const isLast = i === energyTrend.length - 1;
+                  return (
+                    <div key={d.date} className="flex-1 flex flex-col items-center gap-1">
+                      <div className="w-full flex items-end justify-center" style={{ height: '48px' }}>
+                        <div
+                          style={{
+                            height: `${heightPct}%`,
+                            background: isLast ? '#84CC16' : '#84CC1660',
+                            minHeight: '4px',
+                          }}
+                          className="w-full rounded-t-lg transition-all"
+                        />
                       </div>
-                    ))}
-                  </div>
-                </div>
+                      <span className="text-[10px] text-muted-foreground">{d.energy}</span>
+                    </div>
+                  );
+                })}
               </div>
-            </CollapsibleContent>
-          </Collapsible>
+              <p className="text-xs text-muted-foreground mt-2 text-right">Latest →</p>
+            </div>
+          )}
 
-          {/* Recommendation */}
-          <div className="bg-[#F97316]/10 rounded-2xl p-4 border-2 border-[#F97316]/30">
-            <div className="flex items-center gap-2 mb-3">
-              <AlertTriangle className="w-5 h-5 text-[#F97316]" />
-              <h3 className="font-bold text-foreground">Recommendation</h3>
-            </div>
-            <div className="space-y-3">
-              <div className="flex items-center gap-2">
-                <span className="px-3 py-1 bg-[#F97316] text-white text-xs font-bold rounded-full">{analysis.recommendation.urgency}</span>
+          {/* Risk factors from profile */}
+          {(conditions.length > 0 || familyHistory.length > 0) && (
+            <div className="bg-yellow-500/10 rounded-2xl p-4 border border-yellow-500/20">
+              <h3 className="font-bold text-foreground mb-3 flex items-center gap-2">
+                <AlertTriangle className="w-5 h-5 text-yellow-500" />
+                Health Profile Context
+              </h3>
+              <div className="space-y-2 text-sm">
+                {conditions.filter((c) => c !== 'None').map((c) => (
+                  <div key={c} className="flex items-start gap-2">
+                    <div className="w-1.5 h-1.5 rounded-full bg-yellow-500 mt-1.5 shrink-0" />
+                    <p className="text-foreground">{c} <span className="text-muted-foreground">— existing condition</span></p>
+                  </div>
+                ))}
+                {familyHistory.filter((f) => f !== 'None').map((f) => (
+                  <div key={f} className="flex items-start gap-2">
+                    <div className="w-1.5 h-1.5 rounded-full bg-yellow-500/60 mt-1.5 shrink-0" />
+                    <p className="text-foreground">{f} <span className="text-muted-foreground">— family history</span></p>
+                  </div>
+                ))}
               </div>
-              <p className="text-sm text-foreground leading-relaxed">{analysis.recommendation.reasoning}</p>
-              <div className="mt-3">
-                <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">Suggested Specialties</p>
-                <div className="flex flex-wrap gap-1.5">
-                  {analysis.recommendation.suggestedSpecialties.map((specialty) => (
-                    <span key={specialty} className="px-2.5 py-1 bg-[#84CC16]/10 text-[#84CC16] text-xs font-medium rounded-full border border-[#84CC16]/20">
-                      {specialty}
-                    </span>
-                  ))}
+            </div>
+          )}
+
+          {/* Mood detail */}
+          {entry && (
+            <div className="bg-muted/50 rounded-2xl p-4">
+              <h3 className="font-bold text-foreground mb-3 flex items-center gap-2">
+                <Heart className="w-5 h-5 text-[#818CF8]" />
+                Mood & Mental Wellbeing
+              </h3>
+              <div className="flex items-center gap-3">
+                <div className="text-3xl">
+                  {entry.mood >= 4 ? '😊' : entry.mood >= 3 ? '😐' : entry.mood >= 2 ? '😔' : '😞'}
+                </div>
+                <div>
+                  <p className="font-bold text-foreground">{entry.mood ?? '—'}/5</p>
+                  <p className="text-xs text-muted-foreground">
+                    {entry.mood >= 4 ? 'Good mood today' : entry.mood >= 3 ? 'Neutral' : entry.mood >= 2 ? 'Below average' : 'Low mood'}
+                  </p>
                 </div>
               </div>
+              {entry.openFlag && (
+                <div className="mt-3 p-3 bg-background rounded-xl">
+                  <p className="text-xs text-muted-foreground mb-1">Open note</p>
+                  <p className="text-sm text-foreground italic">&quot;{entry.openFlag}&quot;</p>
+                </div>
+              )}
             </div>
-          </div>
+          )}
+
+          {/* Final recommendation */}
+          {ai?.recommendation && (
+            <div className={`rounded-2xl p-4 border-2 ${concernStyle.border} ${concernStyle.bg}`}>
+              <h3 className={`font-bold uppercase text-sm mb-3 ${concernStyle.text}`}>
+                Recommendation
+              </h3>
+              <p className="text-sm text-foreground leading-relaxed">{ai.recommendation}</p>
+              {ai.concernLevel && (
+                <div className="mt-3 flex items-center gap-2">
+                  <span className="text-xs text-muted-foreground">Urgency:</span>
+                  <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${concernStyle.bg} ${concernStyle.text}`}>
+                    {ai.concernLevel}
+                  </span>
+                </div>
+              )}
+            </div>
+          )}
+
+          <div className="h-4" />
         </div>
       </motion.div>
     </>

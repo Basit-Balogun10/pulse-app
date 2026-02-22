@@ -1,26 +1,32 @@
-'use client';
+"use client";
 
-import { useState, useRef, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Send, X, MessageCircle, Maximize2, Minimize2, Paperclip, Image as ImageIcon, Mic, Sparkles, FileText, Search, Calendar } from 'lucide-react';
-import { streamGeminiResponse } from '@/lib/gemini';
-import { userProfile } from '@/lib/mock-data';
-import { amaraFullStory, amaraChatDetections, type ChatDetection } from '@/lib/amara-story-data';
-import { DateTimePicker } from '@/components/ui/date-time-picker';
+import { useState, useRef, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  Send,
+  X,
+  MessageCircle,
+  Maximize2,
+  Minimize2,
+  Paperclip,
+  Image as ImageIcon,
+  Mic,
+  Sparkles,
+} from "lucide-react";
+import { useAction, useMutation, useQuery } from "convex/react";
+import { api } from "@/convex/_generated/api";
+import {
+  amaraFullStory,
+  amaraChatDetections,
+  type ChatDetection,
+} from "@/lib/amara-story-data";
 
 interface Message {
   id: string;
-  type: 'user' | 'ai';
+  type: "user" | "ai";
   text: string;
   timestamp: Date;
   isStreaming?: boolean;
-}
-
-interface Attachment {
-  id: string;
-  file: File;
-  type: 'file' | 'image';
-  preview?: string;
 }
 
 interface ChatBoxProps {
@@ -30,57 +36,86 @@ interface ChatBoxProps {
   currentConcerns?: string[];
 }
 
-export function ChatBox({ isOpen, onClose, checkInHistory = amaraFullStory, currentConcerns = [] }: ChatBoxProps) {
+export function ChatBox({
+  isOpen,
+  onClose,
+  checkInHistory = amaraFullStory,
+  currentConcerns = [],
+}: ChatBoxProps) {
+  // Convex hooks
+  const getChatResponse = useAction(api.ai.getChatResponse);
+  const saveMessage = useMutation(api.chat.save);
+  const convexHistory = useQuery(api.healthEntries.getHistory, { limit: 14 });
+  const convexProfile = useQuery(api.users.getProfile);
+  const chatHistory = useQuery(api.chat.list, { limit: 50 });
+
+  const userName = convexProfile?.name ?? "there";
+
   const [messages, setMessages] = useState<Message[]>([
     {
-      id: '1',
-      type: 'ai',
-      text: `Hi ${userProfile.name}! I'm Pulse AI and I have full context of your health journey. I've been tracking your 14-day check-in history and noticed some patterns. Ask me anything about your wellness, symptoms, or recommendations!`,
+      id: "1",
+      type: "ai",
+      text: `Hi ${userName}! I'm Pulse AI and I have full context of your health journey. Ask me anything about your wellness, symptoms, or recommendations!`,
       timestamp: new Date(),
     },
   ]);
-  const [inputValue, setInputValue] = useState('');
+  const [inputValue, setInputValue] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
-  const [recordingDuration, setRecordingDuration] = useState(0);
   const [detectedInfo, setDetectedInfo] = useState<ChatDetection[]>([]);
-  const [attachments, setAttachments] = useState<Attachment[]>([]);
-  const [previewAttachment, setPreviewAttachment] = useState<Attachment | null>(null);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [showSearch, setShowSearch] = useState(false);
-  const [showDatePicker, setShowDatePicker] = useState(false);
-  const [selectedDate, setSelectedDate] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const messagesContainerRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
-  const recordingIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
 
+  // Hydrate local messages from Convex when chat opens (preserves streaming UX)
+  const hydratedRef = useRef(false);
+  useEffect(() => {
+    if (!isOpen) {
+      hydratedRef.current = false; // reset so next open re-hydrates
+      return;
+    }
+    if (hydratedRef.current) return; // already hydrated this open-session
+    if (chatHistory === undefined) return; // still loading
+
+    hydratedRef.current = true;
+    if (chatHistory.length > 0) {
+      setMessages(
+        chatHistory.map((msg) => ({
+          id: msg._id,
+          type: (msg.role === "user" ? "user" : "ai") as "user" | "ai",
+          text: msg.content,
+          timestamp: new Date(msg.createdAt),
+        })),
+      );
+    }
+    // If chatHistory is empty, the initial greeting stays
+  }, [isOpen, chatHistory]);
+
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!inputValue.trim()) return;
 
     const userInput = inputValue.trim();
-    
+
     // Add user message
     const userMessage: Message = {
       id: Date.now().toString(),
-      type: 'user',
+      type: "user",
       text: userInput,
       timestamp: new Date(),
     };
 
     setMessages((prev) => [...prev, userMessage]);
-    setInputValue('');
+    setInputValue("");
     setIsLoading(true);
 
     // Detect health-related information in user message
@@ -90,285 +125,223 @@ export function ChatBox({ isOpen, onClose, checkInHistory = amaraFullStory, curr
     const aiMessageId = (Date.now() + 1).toString();
     const aiMessage: Message = {
       id: aiMessageId,
-      type: 'ai',
-      text: '',
+      type: "ai",
+      text: "",
       timestamp: new Date(),
       isStreaming: true,
     };
-    
+
     setMessages((prev) => [...prev, aiMessage]);
 
-    try {
-      // Build health context for AI
-      const healthContext = buildHealthContext(checkInHistory, currentConcerns);
-      const prompt = `${healthContext}\n\nUser question: ${userInput}\n\nProvide a helpful, empathetic response based on the health data above. Be specific and reference patterns when relevant.`;
+    // Persist user message to Convex
+    saveMessage({ role: "user", content: userInput }).catch(console.error);
 
-      let fullResponse = '';
-      
-      await streamGeminiResponse(
-        prompt,
-        (chunk) => {
-          fullResponse += chunk;
-          setMessages((prev) =>
-            prev.map((msg) =>
-              msg.id === aiMessageId
-                ? { ...msg, text: fullResponse, isStreaming: true }
-                : msg
-            )
-          );
-        },
-        () => {
-          // On complete
-          setMessages((prev) =>
-            prev.map((msg) =>
-              msg.id === aiMessageId
-                ? { ...msg, isStreaming: false }
-                : msg
-            )
-          );
-          setIsLoading(false);
-        },
-        (error) => {
-          console.error('Chat error:', error);
-          setMessages((prev) =>
-            prev.map((msg) =>
-              msg.id === aiMessageId
-                ? { ...msg, text: 'I apologize, but I encountered an error. Please try again.', isStreaming: false }
-                : msg
-            )
-          );
-          setIsLoading(false);
-        }
+    try {
+      // Use real check-in history from Convex, fall back to amara story
+      const recentEntries =
+        convexHistory && convexHistory.length > 0
+          ? convexHistory
+          : checkInHistory.slice(-7);
+
+      const responseText = await getChatResponse({
+        message: userInput,
+        recentEntries: recentEntries as any[],
+        userName: convexProfile?.name,
+      });
+
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg.id === aiMessageId
+            ? { ...msg, text: responseText, isStreaming: false }
+            : msg,
+        ),
+      );
+      setIsLoading(false);
+
+      // Persist AI response
+      saveMessage({ role: "assistant", content: responseText }).catch(
+        console.error,
       );
     } catch (error) {
-      console.error('Error sending message:', error);
+      console.error("Error sending message:", error);
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg.id === aiMessageId
+            ? {
+                ...msg,
+                text: "I apologize, I had trouble connecting. Please try again.",
+                isStreaming: false,
+              }
+            : msg,
+        ),
+      );
       setIsLoading(false);
     }
   };
 
   // Build comprehensive health context for AI
-  const buildHealthContext = (history: typeof amaraFullStory, concerns: string[]) => {
+  const buildHealthContext = (
+    history: typeof amaraFullStory,
+    concerns: string[],
+  ) => {
     const recentDays = history.slice(-7); // Last 7 days
     const todayEntry = history[history.length - 1];
-    
+
     let context = `HEALTH PROFILE:\n`;
-    context += `Name: ${userProfile.name}\n`;
-    context += `Age: ${userProfile.age}\n`;
-    context += `Family History: ${userProfile.familyHistory?.join(', ') || 'None'}\n`;
-    context += `Last Checkup: ${userProfile.lastCheckup || 'Unknown'}\n\n`;
-    
+    context += `Name: ${convexProfile?.name ?? userName}\n`;
+    context += `Age: ${convexProfile?.age ?? "N/A"}\n`;
+    context += `Family History: ${(convexProfile?.familyHistory ?? []).join(", ") || "None"}\n`;
+    context += `Last Checkup: ${convexProfile?.lastCheckup || "Unknown"}\n\n`;
+
     context += `RECENT CHECK-IN SUMMARY (Last 7 days):\n`;
     recentDays.forEach((day, idx) => {
       context += `Day ${idx + 1} (${day.date}):\n`;
       context += `  Energy: ${day.energy}/5\n`;
-      context += `  Sleep: ${day.sleep?.hours || 'N/A'}hrs, Quality: ${day.sleep?.quality || 'N/A'}\n`;
+      context += `  Sleep: ${day.sleep?.hours || "N/A"}hrs, Quality: ${day.sleep?.quality || "N/A"}\n`;
       context += `  Mood: ${day.mood}/5\n`;
       if (day.symptoms && day.symptoms.length > 0) {
-        context += `  Symptoms: ${day.symptoms.join(', ')}\n`;
+        context += `  Symptoms: ${day.symptoms.join(", ")}\n`;
       }
     });
-    
+
     if (todayEntry.aiAnalysis) {
       context += `\nTODAY'S AI ANALYSIS:\n${todayEntry.aiAnalysis}\n`;
     }
-    
+
     if (concerns.length > 0) {
-      context += `\nCURRENT CONCERNS: ${concerns.join(', ')}\n`;
+      context += `\nCURRENT CONCERNS: ${concerns.join(", ")}\n`;
     }
-    
+
     return context;
   };
 
   // Detect health information from user messages
   const detectHealthInfo = (message: string) => {
     const lowerMessage = message.toLowerCase();
-    const detected: Partial<ChatDetection> = {
-      date: new Date().toISOString().split('T')[0],
-      source: 'chat',
+    const detected: Record<string, string> = {
+      timestamp: new Date().toISOString(),
     };
 
     // Detect symptoms
-    const symptomKeywords = ['pain', 'ache', 'fever', 'headache', 'nausea', 'dizzy', 'tired', 'fatigue'];
-    const foundSymptoms = symptomKeywords.filter(s => lowerMessage.includes(s));
+    const symptomKeywords = [
+      "pain",
+      "ache",
+      "fever",
+      "headache",
+      "nausea",
+      "dizzy",
+      "tired",
+      "fatigue",
+    ];
+    const foundSymptoms = symptomKeywords.filter((s) =>
+      lowerMessage.includes(s),
+    );
     if (foundSymptoms.length > 0) {
-      detected.type = 'symptom';
-      detected.value = foundSymptoms.join(', ');
-      detected.context = message;
+      detected.detectedSymptom = foundSymptoms.join(", ");
+      detected.userContext = message;
     }
 
     // Detect medications
-    if (lowerMessage.includes('taking') || lowerMessage.includes('medication') || lowerMessage.includes('pill')) {
-      detected.type = 'medication';
-      detected.context = message;
+    if (
+      lowerMessage.includes("taking") ||
+      lowerMessage.includes("medication") ||
+      lowerMessage.includes("pill")
+    ) {
+      detected.detectedSymptom =
+        detected.detectedSymptom ?? "medication mention";
+      detected.userContext = message;
     }
 
     // Detect lifestyle changes
-    if (lowerMessage.includes('started') || lowerMessage.includes('stopped') || lowerMessage.includes('changed')) {
-      detected.type = 'lifestyle_change';
-      detected.context = message;
+    if (
+      lowerMessage.includes("started") ||
+      lowerMessage.includes("stopped") ||
+      lowerMessage.includes("changed")
+    ) {
+      detected.detectedSymptom = detected.detectedSymptom ?? "lifestyle change";
+      detected.userContext = message;
     }
 
-    // Store detection if found
-    if (detected.type) {
-      setDetectedInfo((prev) => [...prev, detected as ChatDetection]);
-      console.log('Health info detected:', detected);
+    // Store detection if a symptom was found
+    if (detected.detectedSymptom) {
+      setDetectedInfo((prev) => [
+        ...prev,
+        detected as unknown as ChatDetection,
+      ]);
     }
   };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (files) {
-      const newAttachments: Attachment[] = Array.from(files).map(file => ({
-        id: Date.now().toString() + Math.random(),
-        file,
-        type: 'file' as const,
-      }));
-      setAttachments(prev => [...prev, ...newAttachments]);
-    }
-    e.target.value = ''; // Reset input
-  };
-
-  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (files) {
-      Array.from(files).forEach(file => {
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          const newAttachment: Attachment = {
-            id: Date.now().toString() + Math.random(),
-            file,
-            type: 'image',
-            preview: reader.result as string,
-          };
-          setAttachments(prev => [...prev, newAttachment]);
-        };
-        reader.readAsDataURL(file);
-      });
-    }
-    e.target.value = ''; // Reset input
-  };
-
-  const removeAttachment = (id: string) => {
-    setAttachments(prev => prev.filter(a => a.id !== id));
-  };
-
-  const handleJumpToDate = () => {
-    if (!selectedDate) return;
-    
-    const targetDate = new Date(selectedDate);
-    targetDate.setHours(0, 0, 0, 0);
-    
-    // Find first message on or after selected date
-    const targetIndex = messages.findIndex(msg => {
-      const msgDate = new Date(msg.timestamp);
-      msgDate.setHours(0, 0, 0, 0);
-      return msgDate >= targetDate;
-    });
-    
-    if (targetIndex !== -1 && messagesContainerRef.current) {
-      const messageElements = messagesContainerRef.current.querySelectorAll('[data-message-id]');
-      const targetElement = messageElements[targetIndex] as HTMLElement;
-      if (targetElement) {
-        targetElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        // Highlight briefly
-        targetElement.style.backgroundColor = 'rgba(132, 204, 22, 0.1)';
-        setTimeout(() => {
-          targetElement.style.backgroundColor = '';
-        }, 2000);
-      }
-    }
-    
-    setShowDatePicker(false);
-    setSelectedDate('');
-  };
-
-  // Filter messages based on search query
-  const filteredMessages = searchQuery.trim()
-    ? messages.filter(msg =>
-        msg.text.toLowerCase().includes(searchQuery.toLowerCase())
-      )
-    : messages;
-
-  const sendWithAttachments = () => {
-    if (attachments.length > 0 || inputValue.trim()) {
+    const file = e.target.files?.[0];
+    if (file) {
       const userMessage: Message = {
         id: Date.now().toString(),
-        type: 'user',
-        text: inputValue.trim() || 'Sent attachments',
+        type: "user",
+        text: `📎 Attached: ${file.name}`,
         timestamp: new Date(),
       };
-      setMessages(prev => [...prev, userMessage]);
-      
-      if (attachments.length > 0) {
-        const attachmentMessage: Message = {
-          id: (Date.now() + 1).toString(),
-          type: 'user',
-          text: `📎 ${attachments.length} attachment(s): ${attachments.map(a => a.file.name).join(', ')}`,
-          timestamp: new Date(),
-        };
-        setMessages(prev => [...prev, attachmentMessage]);
-      }
-      
-      setInputValue('');
-      setAttachments([]);
-      
+      setMessages((prev) => [...prev, userMessage]);
+
       setTimeout(() => {
         const aiMessage: Message = {
-          id: (Date.now() + 2).toString(),
-          type: 'ai',
-          text: 'I\'ve received your attachments. In a full implementation, I\'d analyze medical documents, lab results, or health-related images to provide personalized insights.',
+          id: (Date.now() + 1).toString(),
+          type: "ai",
+          text: "I've received your file. In a full implementation, I'd analyze medical documents, lab results, or prescription images to provide personalized health insights.",
           timestamp: new Date(),
         };
-        setMessages(prev => [...prev, aiMessage]);
+        setMessages((prev) => [...prev, aiMessage]);
       }, 1000);
     }
   };
 
-  const handleVoiceInput = async () => {
-    if (isRecording) {
-      setIsRecording(false);
-      if (recordingIntervalRef.current) {
-        clearInterval(recordingIntervalRef.current);
-        recordingIntervalRef.current = null;
-      }
-      
-      // Simulate voice input completion
-      const duration = recordingDuration;
-      setRecordingDuration(0);
-      
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
       const userMessage: Message = {
         id: Date.now().toString(),
-        type: 'user',
-        text: `🎤 Voice message (${duration}s): "How can I improve my sleep quality?"`,
+        type: "user",
+        text: `🖼️ Image attached: ${file.name}`,
+        timestamp: new Date(),
+      };
+      setMessages((prev) => [...prev, userMessage]);
+
+      setTimeout(() => {
+        const aiMessage: Message = {
+          id: (Date.now() + 1).toString(),
+          type: "ai",
+          text: "Image received! I can help analyze medical photos, skin conditions, prescription bottles, or health-related images to provide insights.",
+          timestamp: new Date(),
+        };
+        setMessages((prev) => [...prev, aiMessage]);
+      }, 1000);
+    }
+  };
+
+  const handleVoiceInput = () => {
+    if (isRecording) {
+      setIsRecording(false);
+      // Simulate voice input completion
+      const userMessage: Message = {
+        id: Date.now().toString(),
+        type: "user",
+        text: '🎤 Voice message: "How can I improve my sleep quality?"',
         timestamp: new Date(),
       };
       setMessages((prev) => [...prev, userMessage]);
       setIsLoading(true);
-      
+
       setTimeout(() => {
         const aiMessage: Message = {
           id: (Date.now() + 1).toString(),
-          type: 'ai',
-          text: generateAIResponse('sleep'),
+          type: "ai",
+          text: "Voice input received. Processing your health query...",
           timestamp: new Date(),
         };
         setMessages((prev) => [...prev, aiMessage]);
         setIsLoading(false);
       }, 1000);
     } else {
-      try {
-        // Request microphone permission
-        await navigator.mediaDevices.getUserMedia({ audio: true });
-        
-        setIsRecording(true);
-        setRecordingDuration(0);
-        recordingIntervalRef.current = setInterval(() => {
-          setRecordingDuration(prev => prev + 1);
-        }, 1000);
-      } catch (error) {
-        console.error('Microphone permission error:', error);
-        alert('Unable to access microphone. Please enable microphone permissions in your browser settings.');
-      }
+      setIsRecording(true);
     }
   };
 
@@ -388,15 +361,15 @@ export function ChatBox({ isOpen, onClose, checkInHistory = amaraFullStory, curr
           {/* Chat Modal */}
           <motion.div
             initial={{ y: 600, opacity: 0 }}
-            animate={{ 
-              y: 0, 
+            animate={{
+              y: 0,
               opacity: 1,
-              height: isFullscreen ? '100vh' : '70vh',
-              borderRadius: isFullscreen ? '0px' : '24px 24px 0 0'
+              height: isFullscreen ? "100vh" : "70vh",
+              borderRadius: isFullscreen ? "0px" : "24px 24px 0 0",
             }}
             exit={{ y: 600, opacity: 0 }}
-            transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-            className={`fixed ${isFullscreen ? 'inset-0' : 'bottom-0 left-0 right-0'} bg-card shadow-2xl z-50 flex flex-col border-t border-border`}
+            transition={{ type: "spring", damping: 30, stiffness: 300 }}
+            className={`fixed ${isFullscreen ? "inset-0" : "bottom-0 left-0 right-0"} bg-card shadow-2xl z-50 flex flex-col border-t border-border`}
           >
             {/* Header */}
             <div className="flex items-center justify-between p-6 border-b border-border">
@@ -406,27 +379,12 @@ export function ChatBox({ isOpen, onClose, checkInHistory = amaraFullStory, curr
                 </div>
                 <div>
                   <h3 className="font-bold text-foreground">Pulse AI</h3>
-                  <p className="text-xs text-muted-foreground">Your health companion</p>
+                  <p className="text-xs text-muted-foreground">
+                    Your health companion
+                  </p>
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <motion.button
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => {
-                    setShowSearch(!showSearch);
-                    if (showSearch) setSearchQuery('');
-                  }}
-                  className={`p-2 rounded-full transition-colors ${showSearch ? 'bg-[#84CC16]/10 text-[#84CC16]' : 'hover:bg-muted text-foreground'}`}
-                >
-                  <Search className="w-5 h-5" />
-                </motion.button>
-                <motion.button
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => setShowDatePicker(!showDatePicker)}
-                  className={`p-2 rounded-full transition-colors ${showDatePicker ? 'bg-[#84CC16]/10 text-[#84CC16]' : 'hover:bg-muted text-foreground'}`}
-                >
-                  <Calendar className="w-5 h-5" />
-                </motion.button>
                 <motion.button
                   whileTap={{ scale: 0.95 }}
                   onClick={() => setIsFullscreen(!isFullscreen)}
@@ -448,145 +406,63 @@ export function ChatBox({ isOpen, onClose, checkInHistory = amaraFullStory, curr
               </div>
             </div>
 
-            {/* Search Bar */}
-            <AnimatePresence>
-              {showSearch && (
-                <motion.div
-                  initial={{ height: 0, opacity: 0 }}
-                  animate={{ height: 'auto', opacity: 1 }}
-                  exit={{ height: 0, opacity: 0 }}
-                  className="overflow-hidden border-b border-border"
-                >
-                  <div className="px-6 py-3">
-                    <div className="relative">
-                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                      <input
-                        type="text"
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        placeholder="Search messages..."
-                        className="w-full pl-10 pr-4 py-2 rounded-xl border-2 border-border bg-background text-foreground focus:border-[#84CC16] outline-none transition-colors text-sm"
-                        autoFocus
-                      />
-                      {searchQuery && (
-                        <button
-                          onClick={() => setSearchQuery('')}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                        >
-                          <X className="w-4 h-4" />
-                        </button>
-                      )}
-                    </div>
-                    {searchQuery && (
-                      <p className="text-xs text-muted-foreground mt-2">
-                        Found {filteredMessages.length} message{filteredMessages.length !== 1 ? 's' : ''}
-                      </p>
-                    )}
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-
-            {/* Date Picker */}
-            <AnimatePresence>
-              {showDatePicker && (
-                <motion.div
-                  initial={{ height: 0, opacity: 0 }}
-                  animate={{ height: 'auto', opacity: 1 }}
-                  exit={{ height: 0, opacity: 0 }}
-                  className="overflow-hidden border-b border-border"
-                >
-                  <div className="px-6 py-3">
-                    <div className="flex items-center gap-3">
-                      <div className="flex-1">
-                        <DateTimePicker
-                          value={selectedDate}
-                          onChange={setSelectedDate}
-                          placeholder="Select date to jump to"
-                        />
-                      </div>
-                      <motion.button
-                        whileTap={{ scale: 0.95 }}
-                        onClick={handleJumpToDate}
-                        disabled={!selectedDate}
-                        className="px-4 py-2 rounded-xl bg-[#84CC16] text-white font-semibold text-sm hover:bg-[#84CC16]/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        Jump
-                      </motion.button>
-                    </div>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-
             {/* Health Context Banner */}
             {detectedInfo.length > 0 && (
               <div className="px-6 py-3 bg-[#818CF8]/10 border-b border-[#818CF8]/20">
                 <div className="flex items-center gap-2">
                   <Sparkles className="w-4 h-4 text-[#818CF8]" />
                   <p className="text-xs font-medium text-[#818CF8]">
-                    Detected {detectedInfo.length} health insight{detectedInfo.length > 1 ? 's' : ''} from your messages
+                    Detected {detectedInfo.length} health insight
+                    {detectedInfo.length > 1 ? "s" : ""} from your messages
                   </p>
                 </div>
               </div>
             )}
 
             {/* Messages Container */}
-            <div ref={messagesContainerRef} className="flex-1 overflow-y-auto p-6 space-y-4">
-              {filteredMessages.map((message, index) => {
-                const showDatePill = index === 0 || 
-                  new Date(filteredMessages[index - 1].timestamp).toDateString() !== new Date(message.timestamp).toDateString();
-                
-                return (
-                  <div key={message.id} data-message-id={message.id}>
-                    {showDatePill && (
-                      <div className="flex justify-center mb-4">
-                        <div className="px-3 py-1 rounded-full bg-muted/50 text-xs text-muted-foreground font-medium">
-                          {new Date(message.timestamp).toLocaleDateString('en-GB', { 
-                            day: 'numeric', 
-                            month: 'short' 
-                          })}
-                        </div>
-                      </div>
-                    )}
-                    <motion.div
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className={`flex ${
-                        message.type === 'user' ? 'justify-end' : 'justify-start'
-                      }`}
-                    >
+            <div className="flex-1 overflow-y-auto p-6 space-y-4">
+              {messages.map((message) => (
+                <motion.div
+                  key={message.id}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className={`flex ${
+                    message.type === "user" ? "justify-end" : "justify-start"
+                  }`}
+                >
                   <div
                     className={`max-w-xs lg:max-w-md px-4 py-3 rounded-2xl ${
-                      message.type === 'user'
-                        ? 'bg-[#84CC16] text-white rounded-br-none'
-                        : 'bg-muted text-foreground rounded-bl-none'
+                      message.type === "user"
+                        ? "bg-[#84CC16] text-white rounded-br-none"
+                        : "bg-muted text-foreground rounded-bl-none"
                     }`}
                   >
-                    <p className="text-sm leading-relaxed whitespace-pre-line">{message.text}</p>
+                    <p className="text-sm leading-relaxed whitespace-pre-line">
+                      {message.text}
+                    </p>
                     {message.isStreaming && (
                       <div className="flex items-center gap-1 mt-1">
                         <div className="w-1 h-1 bg-[#818CF8] rounded-full animate-pulse" />
-                        <span className="text-xs text-muted-foreground">AI is typing...</span>
+                        <span className="text-xs text-muted-foreground">
+                          AI is typing...
+                        </span>
                       </div>
                     )}
                     <p
                       className={`text-xs mt-1 ${
-                        message.type === 'user'
-                          ? 'text-white/70'
-                          : 'text-muted-foreground'
+                        message.type === "user"
+                          ? "text-white/70"
+                          : "text-muted-foreground"
                       }`}
                     >
                       {message.timestamp.toLocaleTimeString([], {
-                        hour: '2-digit',
-                        minute: '2-digit',
+                        hour: "2-digit",
+                        minute: "2-digit",
                       })}
                     </p>
                   </div>
                 </motion.div>
-                  </div>
-                );
-              })}
+              ))}
 
               {isLoading && (
                 <motion.div
@@ -618,45 +494,8 @@ export function ChatBox({ isOpen, onClose, checkInHistory = amaraFullStory, curr
 
             {/* Input Area */}
             <div className="p-6 pt-4 border-t border-border">
-              {/* Attachment Previews */}
-              {attachments.length > 0 && (
-                <div className="mb-3 flex gap-2 overflow-x-auto pb-2">
-                  {attachments.map((attachment) => (
-                    <motion.div
-                      key={attachment.id}
-                      initial={{ opacity: 0, scale: 0.8 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      className="relative group shrink-0"
-                    >
-                      {attachment.type === 'image' && attachment.preview ? (
-                        <div 
-                          className="w-20 h-20 rounded-xl overflow-hidden bg-muted cursor-pointer border-2 border-border hover:border-[#84CC16] transition-colors"
-                          onClick={() => setPreviewAttachment(attachment)}
-                        >
-                          <img src={attachment.preview} alt={attachment.file.name} className="w-full h-full object-cover" />
-                        </div>
-                      ) : (
-                        <div 
-                          className="w-20 h-20 rounded-xl bg-muted flex flex-col items-center justify-center cursor-pointer border-2 border-border hover:border-[#84CC16] transition-colors"
-                          onClick={() => setPreviewAttachment(attachment)}
-                        >
-                          <FileText className="w-6 h-6 text-muted-foreground mb-1" />
-                          <span className="text-[8px] text-muted-foreground text-center px-1 truncate w-full">{attachment.file.name}</span>
-                        </div>
-                      )}
-                      <button
-                        onClick={() => removeAttachment(attachment.id)}
-                        className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                      >
-                        <X className="w-3 h-3" />
-                      </button>
-                    </motion.div>
-                  ))}
-                </div>
-              )}
-
-              {/* Media Buttons Row - Centered */}
-              <div className="flex items-center justify-center gap-2 mb-3 overflow-x-auto pb-1">
+              {/* Media Buttons Row */}
+              <div className="flex items-center gap-2 mb-3">
                 <motion.button
                   whileTap={{ scale: 0.97 }}
                   onClick={() => fileInputRef.current?.click()}
@@ -677,37 +516,30 @@ export function ChatBox({ isOpen, onClose, checkInHistory = amaraFullStory, curr
                   whileTap={{ scale: 0.97 }}
                   onClick={handleVoiceInput}
                   className={`flex items-center gap-2 px-3 py-2 rounded-xl transition-colors text-sm font-medium ${
-                    isRecording 
-                      ? 'bg-red-500 text-white' 
-                      : 'bg-muted hover:bg-muted/70 text-foreground'
+                    isRecording
+                      ? "bg-red-500 text-white"
+                      : "bg-muted hover:bg-muted/70 text-foreground"
                   }`}
                 >
                   <Mic className="w-4 h-4" />
-                  <span>{isRecording ? `Recording... ${recordingDuration}s` : 'Voice'}</span>
+                  <span>{isRecording ? "Recording..." : "Voice"}</span>
                 </motion.button>
               </div>
 
               {/* Text Input + Send */}
-              <form onSubmit={(e) => { e.preventDefault(); sendWithAttachments(); }} className="flex gap-3">
-                <textarea
+              <form onSubmit={handleSendMessage} className="flex gap-3">
+                <input
+                  type="text"
                   value={inputValue}
                   onChange={(e) => setInputValue(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                      e.preventDefault();
-                      handleSendMessage(e);
-                    }
-                  }}
-                  placeholder="Ask me anything... (Shift+Enter for new line)"
-                  rows={1}
-                  className="flex-1 px-4 py-3 rounded-2xl bg-muted border-2 border-transparent focus:border-[#84CC16] focus:outline-none text-foreground resize-none max-h-32 min-h-[48px]"
-                  style={{ fieldSizing: 'content' } as any}
+                  placeholder="Ask me anything..."
+                  className="flex-1 px-4 py-3 rounded-2xl bg-muted border-2 border-transparent focus:border-[#84CC16] focus:outline-none text-foreground"
                 />
                 <motion.button
                   whileTap={{ scale: 0.97 }}
                   type="submit"
-                  disabled={(!inputValue.trim() && attachments.length === 0) || isLoading}
-                  className="bg-[#84CC16] text-white p-3 rounded-2xl hover:bg-[#84CC16]/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center self-end"
+                  disabled={!inputValue.trim() || isLoading}
+                  className="bg-[#84CC16] text-white p-3 rounded-2xl hover:bg-[#84CC16]/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
                 >
                   <Send className="w-5 h-5" />
                 </motion.button>
@@ -720,7 +552,6 @@ export function ChatBox({ isOpen, onClose, checkInHistory = amaraFullStory, curr
                 accept=".pdf,.doc,.docx,.txt"
                 onChange={handleFileSelect}
                 className="hidden"
-                multiple
               />
               <input
                 ref={imageInputRef}
@@ -728,55 +559,9 @@ export function ChatBox({ isOpen, onClose, checkInHistory = amaraFullStory, curr
                 accept="image/*"
                 onChange={handleImageSelect}
                 className="hidden"
-                multiple
               />
             </div>
           </motion.div>
-
-          {/* Attachment Preview Modal */}
-          <AnimatePresence>
-            {previewAttachment && (
-              <>
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  onClick={() => setPreviewAttachment(null)}
-                  className="fixed inset-0 bg-black/80 z-50 backdrop-blur-sm"
-                />
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.9 }}
-                  className="fixed inset-0 z-50 flex items-center justify-center p-6"
-                >
-                  <div className="relative max-w-4xl max-h-[90vh] w-full">
-                    <button
-                      onClick={() => setPreviewAttachment(null)}
-                      className="absolute -top-12 right-0 w-10 h-10 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center transition-colors"
-                    >
-                      <X className="w-6 h-6 text-white" />
-                    </button>
-                    {previewAttachment.type === 'image' && previewAttachment.preview ? (
-                      <img
-                        src={previewAttachment.preview}
-                        alt={previewAttachment.file.name}
-                        className="w-full h-full object-contain rounded-2xl"
-                      />
-                    ) : (
-                      <div className="bg-card rounded-2xl p-12 text-center">
-                        <FileText className="w-24 h-24 text-muted-foreground mx-auto mb-4" />
-                        <h3 className="text-2xl font-bold text-foreground mb-2">{previewAttachment.file.name}</h3>
-                        <p className="text-muted-foreground">
-                          {(previewAttachment.file.size / 1024).toFixed(1)} KB
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                </motion.div>
-              </>
-            )}
-          </AnimatePresence>
         </>
       )}
     </AnimatePresence>

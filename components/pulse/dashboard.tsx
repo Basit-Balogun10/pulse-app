@@ -3,41 +3,68 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Home, Zap, MapPin, User } from 'lucide-react';
+import { useMutation, useAction, useQuery } from 'convex/react';
+import { api } from '@/convex/_generated/api';
 import { HomeView } from './views/home-view';
 import { CheckInView } from './views/check-in-view';
-import { AnalysisView } from './views/analysis-view';
 import { ClinicsView } from './views/clinics-view';
 import { ProfileView } from './views/profile-view';
 import { ChatBox } from './chat-box';
 import { AnalysisModal, generateInsight } from './analysis-modal';
 import { getWeatherContext, weatherSummary } from '@/lib/weather';
 
-type ViewType = 'home' | 'checkin' | 'analysis' | 'clinics' | 'profile';
+type ViewType = 'home' | 'checkin' | 'clinics' | 'profile';
+
+const TODAY = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
 
 export function Dashboard() {
   const [activeView, setActiveView] = useState<ViewType>('home');
   const [isChatOpen, setIsChatOpen] = useState(false);
 
-  // Check-in + analysis state
-  const [todayEntry, setTodayEntry] = useState<Record<string, any> | null>(null);
+  // Analysis modal state
   const [analysisOpen, setAnalysisOpen] = useState(false);
-  const [analysisLoading, setAnalysisLoading] = useState(false);
-  const [analysisResult, setAnalysisResult] = useState<string | null>(null);
+  const [analysisOverview, setAnalysisOverview] = useState<string | null>(null);
+
+  // Convex: read today's entry (reactive — updates when DB changes)
+  const todayEntry = useQuery(api.healthEntries.getToday, { date: TODAY }) ?? null;
+
+  // Convex: mutations & actions
+  const saveEntry = useMutation(api.healthEntries.save);
+  const runAiAnalysis = useAction(api.ai.generateDailyAnalysis);
 
   const handleCheckInComplete = async (data: Record<string, any>) => {
-    setTodayEntry(data);
+    // Open analysis modal immediately (it will show a loading state)
     setAnalysisOpen(true);
-    setAnalysisLoading(true);
 
-    // Fetch weather in parallel with a small simulated analysis delay
-    const [weather] = await Promise.all([
+    // Fetch weather + save entry to Convex in parallel
+    const [weather, entryId] = await Promise.all([
       getWeatherContext(),
-      new Promise((r) => setTimeout(r, 2200)),
+      saveEntry({
+        date: TODAY,
+        energy: data.energy,
+        sleep: data.sleep,
+        symptoms: data.symptoms,
+        respiratory: data.respiratory,
+        temperature: data.temperature,
+        mood: data.mood,
+        appetite: data.appetite,
+        lifestyle: data.lifestyle,
+        openFlag: data.openFlag,
+        weatherContext: weatherSummary(await getWeatherContext()) ?? undefined,
+      }),
     ]);
 
-    const insight = generateInsight(data, weatherSummary(weather));
-    setAnalysisResult(insight);
-    setAnalysisLoading(false);
+    // Generate client-side insight immediately (fast feedback)
+    const overview = generateInsight(data, weatherSummary(weather));
+    setAnalysisOverview(overview);
+
+    // Kick off server-side Gemini analysis in the background (will update DB)
+    if (entryId) {
+      runAiAnalysis({
+        entryId: entryId as any,
+        weatherContext: weatherSummary(weather) ?? undefined,
+      }).catch(console.error);
+    }
   };
 
   const handleAnalysisDismiss = () => {
@@ -45,15 +72,6 @@ export function Dashboard() {
     setActiveView('home');
   };
 
-  const navItems: { id: ViewType; label: string; icon: typeof Home }[] = [
-    { id: 'home', label: 'Home', icon: Home },
-    { id: 'checkin', label: 'Check-in', icon: Zap },
-    { id: 'analysis', label: 'Analysis', icon: Zap }, // placeholder — replaced below
-    { id: 'clinics', label: 'Clinics', icon: MapPin },
-    { id: 'profile', label: 'Profile', icon: User },
-  ];
-
-  // Real nav (no history)
   const nav = [
     { id: 'home' as ViewType, label: 'Home', icon: Home },
     { id: 'checkin' as ViewType, label: 'Check-in', icon: Zap },
@@ -72,19 +90,17 @@ export function Dashboard() {
           />
         );
       case 'checkin':
-        // Prevent double-entry - if today's entry is complete, show home view with message
+        // Prevent double-entry — show home if already checked in today
         if (todayEntry !== null) {
           return (
             <HomeView
               onChatOpen={() => setIsChatOpen(true)}
-              onStartCheckIn={() => setActiveView('checkin')}
+              onStartCheckIn={() => {}}
               todayEntry={todayEntry}
             />
           );
         }
         return <CheckInView onComplete={handleCheckInComplete} />;
-      case 'analysis':
-        return <AnalysisView />;
       case 'clinics':
         return <ClinicsView />;
       case 'profile':
@@ -147,12 +163,17 @@ export function Dashboard() {
       {/* Chat box */}
       <ChatBox isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} />
 
-      {/* Analysis modal */}
+      {/* Analysis modal — shown after check-in complete.
+          overview prefers the live Gemini result (written by background action);
+          falls back to client-side quick insight while Gemini is still running. */}
       <AnalysisModal
         isOpen={analysisOpen}
-        isLoading={analysisLoading}
-        result={analysisResult}
+        overview={(todayEntry as any)?.aiAnalysis?.overview ?? analysisOverview}
         onDismiss={handleAnalysisDismiss}
+        onBookClinic={() => {
+          setAnalysisOpen(false);
+          setActiveView('clinics');
+        }}
       />
     </div>
   );

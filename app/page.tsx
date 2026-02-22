@@ -1,18 +1,19 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { SplashScreen } from '@/components/pulse/splash-screen';
-import { Dashboard } from '@/components/pulse/dashboard';
-import { OnboardingModal } from '@/components/pulse/onboarding-modal';
+import { useState, useEffect } from "react";
+import { SplashScreen } from "@/components/pulse/splash-screen";
+import { Dashboard } from "@/components/pulse/dashboard";
+import { OnboardingModal } from "@/components/pulse/onboarding-modal";
 
 export default function Home() {
   const [showSplash, setShowSplash] = useState(true);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [isReady, setIsReady] = useState(false);
 
+  // Check onboarding state on mount
   useEffect(() => {
-    const hasSeenSplash = sessionStorage.getItem('hasSeenSplash');
-    const isOnboarded = localStorage.getItem('pulseUserOnboarded');
+    const hasSeenSplash = sessionStorage.getItem("hasSeenSplash");
+    const isOnboarded = localStorage.getItem("pulseUserOnboarded");
 
     if (hasSeenSplash) {
       setShowSplash(false);
@@ -26,13 +27,14 @@ export default function Home() {
   }, []);
 
   const handleSplashComplete = () => {
-    sessionStorage.setItem('hasSeenSplash', 'true');
+    sessionStorage.setItem("hasSeenSplash", "true");
     setShowSplash(false);
   };
 
-  const handleOnboardingSave = (data: any) => {
-    localStorage.setItem('pulseUserProfile', JSON.stringify(data));
-    localStorage.setItem('pulseUserOnboarded', 'true');
+  const handleOnboardingSave = async (data: any) => {
+    // Save to localStorage (backend auth disabled for now)
+    localStorage.setItem("pulseUserProfile", JSON.stringify(data));
+    localStorage.setItem("pulseUserOnboarded", "true");
     setShowOnboarding(false);
     setIsReady(true);
   };

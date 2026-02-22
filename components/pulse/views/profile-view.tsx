@@ -7,9 +7,9 @@ import {
   Shield, Bell, LogOut, Pill, AlertCircle, Users,
   Star, X, Save, ArrowLeft,
 } from 'lucide-react';
-import { userProfile } from '@/lib/mock-data';
+import { useQuery, useMutation } from 'convex/react';
+import { api } from '@/convex/_generated/api';
 import { BillingView } from '@/components/pulse/views/billing-view';
-import { DateTimePicker } from '@/components/ui/date-time-picker';
 
 // ─── types ────────────────────────────────────────────────────────────────────
 interface ProfileData {
@@ -209,12 +209,15 @@ function EditSheet({
               <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Alcohol</label>
               {select('alcoholUse', ALCO_OPTS)}
             </div>
-            <DateTimePicker
-              label="Last Checkup"
-              value={form.lastCheckup}
-              onChange={(v) => onSingleSelect('lastCheckup', v)}
-              placeholder="Select date of last checkup"
-            />
+            <div>
+              <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Last Checkup</label>
+              <input
+                type="date"
+                value={form.lastCheckup}
+                onChange={(e) => onSingleSelect('lastCheckup', e.target.value)}
+                className="w-full px-4 py-3 rounded-xl bg-muted border-2 border-transparent focus:border-[#84CC16] focus:outline-none text-foreground text-sm"
+              />
+            </div>
           </div>
         </section>
       </div>
@@ -228,18 +231,46 @@ export function ProfileView() {
   const [editForm, setEditForm] = useState<ProfileData>(EMPTY);
   const [isEditing, setIsEditing] = useState(false);
   const [showBilling, setShowBilling] = useState(false);
-  const [showMedications, setShowMedications] = useState(false);
-  const [showHealthCircles, setShowHealthCircles] = useState(false);
-  const tier = getTierInfo(userProfile.streak);
 
+  // Convex data
+  const convexProfile = useQuery(api.users.getProfile);
+  const convexStreak = useQuery(api.users.getStreak) ?? 0;
+  const updateProfileMutation = useMutation(api.users.updateProfile);
+
+  const tier = getTierInfo(convexStreak);
+
+  // Sync Convex profile → local state (fallback to localStorage)
   useEffect(() => {
-    const saved = localStorage.getItem('pulseUserProfile');
-    if (saved) {
-      const data = JSON.parse(saved);
-      setProfile(data);
-      setEditForm(data);
+    if (convexProfile) {
+      const merged: ProfileData = {
+        name: convexProfile.name ?? '',
+        age: convexProfile.age ?? '',
+        sex: convexProfile.sex ?? '',
+        height: convexProfile.height ?? '',
+        weight: convexProfile.weight ?? '',
+        medicalConditions: (convexProfile.medicalConditions ?? []).join(', '),
+        familyHistory: (convexProfile.familyHistory ?? []).join(', '),
+        currentMedications: convexProfile.currentMedications ?? '',
+        allergies: convexProfile.allergies ?? '',
+        smokingStatus: convexProfile.smokingStatus ?? '',
+        alcoholUse: convexProfile.alcoholUse ?? '',
+        bloodType: convexProfile.bloodType ?? '',
+        lastCheckup: convexProfile.lastCheckup ?? '',
+      };
+      setProfile(merged);
+      setEditForm(merged);
+    } else {
+      // Fallback to localStorage if Convex not ready
+      const saved = localStorage.getItem('pulseUserProfile');
+      if (saved) {
+        try {
+          const data = JSON.parse(saved);
+          setProfile(data);
+          setEditForm(data);
+        } catch {}
+      }
     }
-  }, []);
+  }, [convexProfile]);
 
   // ── edit handlers ─────────────────────────────────────────────────────────
   const openEdit = () => { setEditForm({ ...profile }); setIsEditing(true); };
@@ -262,14 +293,39 @@ export function ProfileView() {
     });
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
+    // Save to Convex
+    try {
+      await updateProfileMutation({
+        name: editForm.name,
+        age: editForm.age,
+        sex: editForm.sex,
+        height: editForm.height,
+        weight: editForm.weight,
+        medicalConditions: editForm.medicalConditions
+          ? editForm.medicalConditions.split(', ').filter(Boolean)
+          : [],
+        familyHistory: editForm.familyHistory
+          ? editForm.familyHistory.split(', ').filter(Boolean)
+          : [],
+        currentMedications: editForm.currentMedications,
+        allergies: editForm.allergies,
+        smokingStatus: editForm.smokingStatus,
+        alcoholUse: editForm.alcoholUse,
+        bloodType: editForm.bloodType,
+        lastCheckup: editForm.lastCheckup,
+      });
+    } catch (err) {
+      console.error('Convex profile update failed:', err);
+    }
+    // Also keep localStorage for fast reads on load
     localStorage.setItem('pulseUserProfile', JSON.stringify(editForm));
     setProfile({ ...editForm });
     setIsEditing(false);
   };
 
   // ── derived display ───────────────────────────────────────────────────────
-  const displayName = profile.name || userProfile.name;
+  const displayName = profile.name || 'Pulse User';
   const initials = displayName.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2);
 
   if (showBilling) return <BillingView onBack={() => setShowBilling(false)} />;
@@ -343,9 +399,9 @@ export function ProfileView() {
             {/* Stats */}
             <div className="grid grid-cols-3 gap-3">
               {[
-                { icon: Flame,    label: 'Streak',    value: `${userProfile.streak}d`, color: '#F97316' },
-                { icon: Activity, label: 'Check-ins', value: '14',                    color: '#14B8A6' },
-                { icon: Heart,    label: 'Score',     value: `${userProfile.healthScore}`, color: '#84CC16' },
+                { icon: Flame,    label: 'Streak',    value: `${convexStreak}d`,   color: '#F97316' },
+                { icon: Activity, label: 'Check-ins', value: `${convexStreak}`,    color: '#14B8A6' },
+                { icon: Heart,    label: 'Tier',      value: tier.name,            color: tier.color },
               ].map(({ icon: Icon, label, value, color }) => (
                 <div key={label} className="bg-card rounded-2xl p-3 border border-border text-center">
                   <Icon className="w-4 h-4 mx-auto mb-1" style={{ color }} />
@@ -410,8 +466,8 @@ export function ProfileView() {
                 <p className="text-sm font-bold text-foreground">Account</p>
               </div>
               <div className="px-2 py-1">
-                <SettingsRow icon={Pill}         label="Medications & Allergies" sublabel="Manage your health list" onPress={() => setShowMedications(true)} />
-                <SettingsRow icon={Users}        label="Health Circles"          sublabel="Share streaks with friends" onPress={() => setShowHealthCircles(true)} />
+                <SettingsRow icon={Pill}         label="Medications & Allergies" sublabel="Manage your health list" />
+                <SettingsRow icon={Users}        label="Health Circles"          sublabel="Share streaks with friends" />
                 <SettingsRow icon={Bell}         label="Notifications"           sublabel="Reminders & alerts" />
                 <SettingsRow icon={Shield}       label="Privacy & Data"          sublabel="Control your health data" />
                 <SettingsRow icon={AlertCircle}  label="Emergency Contact"       sublabel="Set your emergency contact" />
@@ -442,146 +498,6 @@ export function ProfileView() {
             onClose={() => setIsEditing(false)}
             onSave={handleSave}
           />
-        )}
-      </AnimatePresence>
-
-      {/* Medications & Allergies Modal */}
-      <AnimatePresence>
-        {showMedications && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4"
-            onClick={() => setShowMedications(false)}
-          >
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              onClick={(e) => e.stopPropagation()}
-              className="bg-background rounded-3xl overflow-hidden w-full max-w-md max-h-[80vh] flex flex-col"
-            >
-              <div className="px-6 py-4 border-b border-border flex items-center justify-between shrink-0">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-[#84CC16]/10 flex items-center justify-center">
-                    <Pill className="w-5 h-5 text-[#84CC16]" />
-                  </div>
-                  <h3 className="text-lg font-bold text-foreground">Medications & Allergies</h3>
-                </div>
-                <motion.button
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => setShowMedications(false)}
-                  className="w-9 h-9 rounded-full bg-muted flex items-center justify-center"
-                >
-                  <X className="w-5 h-5 text-foreground" />
-                </motion.button>
-              </div>
-              <div className="flex-1 overflow-y-auto p-6 space-y-4">
-                <div className="bg-muted rounded-2xl p-4">
-                  <p className="text-xs text-muted-foreground font-semibold mb-2">Current Medications</p>
-                  <p className="text-sm text-foreground">{profile.currentMedications || 'None listed'}</p>
-                </div>
-                <div className="bg-muted rounded-2xl p-4">
-                  <p className="text-xs text-muted-foreground font-semibold mb-2">Allergies</p>
-                  <p className="text-sm text-foreground">{profile.allergies || 'None listed'}</p>
-                </div>
-                <div className="bg-[#EF4444]/10 border border-[#EF4444]/30 rounded-2xl p-4">
-                  <p className="text-xs text-[#EF4444] font-semibold mb-2">⚠️ Important</p>
-                  <p className="text-sm text-foreground">Always inform healthcare providers about your medications and allergies before treatment.</p>
-                </div>
-                <motion.button
-                  whileTap={{ scale: 0.97 }}
-                  onClick={() => {
-                    setShowMedications(false);
-                    setIsEditing(true);
-                  }}
-                  className="w-full py-3 rounded-2xl bg-[#84CC16] text-white font-bold text-sm hover:bg-[#84CC16]/90 transition-colors"
-                >
-                  Edit in Profile
-                </motion.button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Health Circles Modal */}
-      <AnimatePresence>
-        {showHealthCircles && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4"
-            onClick={() => setShowHealthCircles(false)}
-          >
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              onClick={(e) => e.stopPropagation()}
-              className="bg-background rounded-3xl overflow-hidden w-full max-w-md max-h-[80vh] flex flex-col"
-            >
-              <div className="px-6 py-4 border-b border-border flex items-center justify-between shrink-0">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-[#84CC16]/10 flex items-center justify-center">
-                    <Users className="w-5 h-5 text-[#84CC16]" />
-                  </div>
-                  <h3 className="text-lg font-bold text-foreground">Health Circles</h3>
-                </div>
-                <motion.button
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => setShowHealthCircles(false)}
-                  className="w-9 h-9 rounded-full bg-muted flex items-center justify-center"
-                >
-                  <X className="w-5 h-5 text-foreground" />
-                </motion.button>
-              </div>
-              <div className="flex-1 overflow-y-auto p-6 space-y-4">
-                <p className="text-sm text-muted-foreground">
-                  Create or join health circles to share your wellness journey, motivate each other, and build healthy habits together!
-                </p>
-                
-                {/* Mock circles */}
-                <div className="space-y-3">
-                  {[
-                    { name: 'Family Support', members: 4, streak: '28 days', color: '#84CC16' },
-                    { name: 'Gym Buddies', members: 8, streak: '14 days', color: '#14B8A6' },
-                  ].map((circle, i) => (
-                    <div key={i} className="bg-card border border-border rounded-2xl p-4">
-                      <div className="flex items-center gap-3 mb-2">
-                        <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ backgroundColor: `${circle.color}20` }}>
-                          <Users className="w-5 h-5" style={{ color: circle.color }} />
-                        </div>
-                        <div className="flex-1">
-                          <p className="font-bold text-foreground">{circle.name}</p>
-                          <p className="text-xs text-muted-foreground">{circle.members} members</p>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-sm font-bold" style={{ color: circle.color }}>{circle.streak}</p>
-                          <p className="text-xs text-muted-foreground">Avg streak</p>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                <motion.button
-                  whileTap={{ scale: 0.97 }}
-                  className="w-full py-3 rounded-2xl bg-[#84CC16] text-white font-bold text-sm hover:bg-[#84CC16]/90 transition-colors"
-                >
-                  + Create New Circle
-                </motion.button>
-
-                <div className="bg-muted rounded-2xl p-4">
-                  <p className="text-xs text-muted-foreground text-center">
-                    Share your streaks, check-in patterns, and milestones to inspire each other. Privacy settings available.
-                  </p>
-                </div>
-              </div>
-            </motion.div>
-          </motion.div>
         )}
       </AnimatePresence>
     </>
