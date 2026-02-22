@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Flame, MessageCircle, Zap, Sparkles } from 'lucide-react';
+import { Flame, MessageCircle, Zap, Sparkles, ChevronRight } from 'lucide-react';
 import { userProfile, mockHealthData } from '@/lib/mock-data';
 import { amaraFullStory } from '@/lib/amara-story-data';
 import { DayCarousel } from '@/components/pulse/day-carousel';
@@ -13,7 +13,8 @@ import { useNudgeTracking } from '@/hooks/use-nudge-tracking';
 import { Badge } from '@/components/ui/badge';
 import { amaraDay15DetailedAnalysis } from '@/lib/amara-story-data';
 
-const TODAY = amaraFullStory[amaraFullStory.length - 1].date; // 2026-02-21 (Day 15)
+// Today is February 22, 2026 (Day 16)
+const TODAY = '2026-02-22';
 
 const SUBHEADINGS = [
   'Consistency is your superpower.',
@@ -54,7 +55,7 @@ export function HomeView({ onChatOpen, onStartCheckIn, todayEntry }: HomeViewPro
   const hasTodayEntry = isToday && todayEntry != null;
   // Get pre-generated AI analysis overview from today's entry
   const analysisOverview = todayEntry?.aiAnalysis?.overview || todayEntry?.aiAnalysis || null;
-  const selectedEntry = mockHealthData.find((d) => d.date === selectedDate) ?? null;
+  const selectedEntry = amaraFullStory.find((d) => d.date === selectedDate) ?? null;
 
   const item = (i: number) => ({
     hidden: { opacity: 0, y: 16 },
@@ -135,9 +136,9 @@ export function HomeView({ onChatOpen, onStartCheckIn, todayEntry }: HomeViewPro
               <motion.button
                 whileTap={{ scale: 0.97 }}
                 onClick={onStartCheckIn}
-                className="w-full py-3.5 rounded-2xl bg-[#84CC16] text-white font-bold text-sm hover:bg-[#84CC16]/90 transition-colors"
+                className="w-full py-3.5 rounded-2xl bg-[#84CC16] text-white font-bold text-sm hover:bg-[#84CC16]/90 transition-colors flex items-center justify-center gap-2"
               >
-                Start today's check-in →
+                Start today&apos;s check-in <ChevronRight className="w-5 h-5" />
               </motion.button>
             </motion.div>
           )}

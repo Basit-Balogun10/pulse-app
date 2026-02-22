@@ -13,8 +13,8 @@ interface DayCarouselProps {
   missedDays?: string[];
 }
 
-// Use Day 15 (today) from Amara's story
-const TODAY_STR = amaraFullStory[amaraFullStory.length - 1].date; // 2026-02-21
+// Today is February 22, 2026
+const TODAY_STR = '2026-02-22';
 
 export function DayCarousel({ onDaySelect, selectedDate, missedDays = [] }: DayCarouselProps) {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -104,12 +104,12 @@ export function DayCarousel({ onDaySelect, selectedDate, missedDays = [] }: DayC
               key={day.date}
               onClick={() => onDaySelect(day.date)}
               whileTap={{ scale: 0.9 }}
-              className={`shrink-0 flex flex-col items-center gap-1.5 py-2 px-3 rounded-xl transition-all ${
+              className={`shrink-0 flex flex-col items-center gap-1.5 py-2.5 px-3.5 rounded-xl transition-all ${
                 isSelected ? 'bg-primary/10 ring-2 ring-primary/40' : 'hover:bg-muted/50'
-              }`}
+              } ${today ? 'ring-2 ring-[#84CC16]/30' : ''}`}
             >
               {/* Diagonal capsule pill */}
-              <div className="w-9 h-9 flex items-center justify-center">
+              <div className="w-9 h-9 flex items-center justify-center relative overflow-visible">
                 <div
                   style={{
                     width: '36px',

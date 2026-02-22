@@ -536,6 +536,33 @@ export const amaraDay15: CheckInEntry = {
   },
 };
 
+// Day 16: Today - February 22, 2026 (check-in not yet completed)
+export const amaraDay16: CheckInEntry = {
+  date: '2026-02-22',
+  dayNumber: 16,
+  hasCheckedIn: false, // Today's check-in is pending
+  energy: 0,
+  sleep: {
+    hours: 0,
+    quality: 'unknown',
+  },
+  symptoms: [],
+  respiratory: false,
+  temperature: {
+    hasFever: false,
+    value: 0,
+  },
+  mood: 'neutral',
+  appetite: 'unknown',
+  lifestyle: {
+    water: false,
+    exercise: false,
+    meditation: false,
+    screenTime: 'unknown',
+    social: 'unknown',
+  },
+};
+
 // Export all days as an array for easy access
 export const amaraFullStory: CheckInEntry[] = [
   amaraDay1,
@@ -553,6 +580,7 @@ export const amaraFullStory: CheckInEntry[] = [
   amaraDay13,
   amaraDay14,
   amaraDay15,
+  amaraDay16, // Today
 ];
 
 // Amara's health profile
