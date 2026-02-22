@@ -220,17 +220,14 @@ export function HomeView({ onChatOpen, onStartCheckIn, todayEntry }: HomeViewPro
             ) : selectedEntry ? (
               <div className="grid grid-cols-2 gap-3">
                 {[
-                  { label: 'Energy', value: selectedEntry.energy, max: '/10', emoji: '⚡' },
-                  { label: 'Sleep', value: selectedEntry.sleep, max: '/10', emoji: '🌙' },
-                  { label: 'Mood', value: selectedEntry.mood, max: '/10', emoji: '😊' },
-                  { label: 'Appetite', value: selectedEntry.appetite, max: '/5', emoji: '🍽️' },
-                ].map(({ label, value, max, emoji }) => (
+                  { label: 'Energy', value: `${selectedEntry.energy}/5`, emoji: '⚡' },
+                  { label: 'Sleep', value: `${selectedEntry.sleep.hours}h`, emoji: '🌙' },
+                  { label: 'Mood', value: selectedEntry.mood, emoji: '😊' },
+                  { label: 'Appetite', value: selectedEntry.appetite, emoji: '🍽️' },
+                ].map(({ label, value, emoji }) => (
                   <div key={label} className="bg-muted rounded-2xl p-3">
                     <p className="text-xs text-muted-foreground mb-1">{emoji} {label}</p>
-                    <div className="flex items-end gap-0.5">
-                      <span className="text-xl font-bold text-foreground">{value}</span>
-                      <span className="text-muted-foreground text-xs mb-0.5">{max}</span>
-                    </div>
+                    <p className="text-lg font-bold text-foreground capitalize">{value}</p>
                   </div>
                 ))}
               </div>
