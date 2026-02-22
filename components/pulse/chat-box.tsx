@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Send, X, MessageCircle, Maximize2, Minimize2, Paperclip, Image as ImageIcon, Mic, Sparkles, FileText } from 'lucide-react';
+import { Send, X, MessageCircle, Maximize2, Minimize2, Paperclip, Image as ImageIcon, Mic, Sparkles, FileText, Search, Calendar } from 'lucide-react';
 import { streamGeminiResponse } from '@/lib/gemini';
 import { userProfile } from '@/lib/mock-data';
 import { amaraFullStory, amaraChatDetections, type ChatDetection } from '@/lib/amara-story-data';
@@ -46,7 +46,12 @@ export function ChatBox({ isOpen, onClose, checkInHistory = amaraFullStory, curr
   const [detectedInfo, setDetectedInfo] = useState<ChatDetection[]>([]);
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [previewAttachment, setPreviewAttachment] = useState<Attachment | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showSearch, setShowSearch] = useState(false);
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [selectedDate, setSelectedDate] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const recordingIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -246,6 +251,43 @@ export function ChatBox({ isOpen, onClose, checkInHistory = amaraFullStory, curr
     setAttachments(prev => prev.filter(a => a.id !== id));
   };
 
+  const handleJumpToDate = () => {
+    if (!selectedDate) return;
+    
+    const targetDate = new Date(selectedDate);
+    targetDate.setHours(0, 0, 0, 0);
+    
+    // Find first message on or after selected date
+    const targetIndex = messages.findIndex(msg => {
+      const msgDate = new Date(msg.timestamp);
+      msgDate.setHours(0, 0, 0, 0);
+      return msgDate >= targetDate;
+    });
+    
+    if (targetIndex !== -1 && messagesContainerRef.current) {
+      const messageElements = messagesContainerRef.current.querySelectorAll('[data-message-id]');
+      const targetElement = messageElements[targetIndex] as HTMLElement;
+      if (targetElement) {
+        targetElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        // Highlight briefly
+        targetElement.style.backgroundColor = 'rgba(132, 204, 22, 0.1)';
+        setTimeout(() => {
+          targetElement.style.backgroundColor = '';
+        }, 2000);
+      }
+    }
+    
+    setShowDatePicker(false);
+    setSelectedDate('');
+  };
+
+  // Filter messages based on search query
+  const filteredMessages = searchQuery.trim()
+    ? messages.filter(msg =>
+        msg.text.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    : messages;
+
   const sendWithAttachments = () => {
     if (attachments.length > 0 || inputValue.trim()) {
       const userMessage: Message = {
@@ -369,6 +411,23 @@ export function ChatBox({ isOpen, onClose, checkInHistory = amaraFullStory, curr
               <div className="flex items-center gap-2">
                 <motion.button
                   whileTap={{ scale: 0.95 }}
+                  onClick={() => {
+                    setShowSearch(!showSearch);
+                    if (showSearch) setSearchQuery('');
+                  }}
+                  className={`p-2 rounded-full transition-colors ${showSearch ? 'bg-[#84CC16]/10 text-[#84CC16]' : 'hover:bg-muted text-foreground'}`}
+                >
+                  <Search className="w-5 h-5" />
+                </motion.button>
+                <motion.button
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => setShowDatePicker(!showDatePicker)}
+                  className={`p-2 rounded-full transition-colors ${showDatePicker ? 'bg-[#84CC16]/10 text-[#84CC16]' : 'hover:bg-muted text-foreground'}`}
+                >
+                  <Calendar className="w-5 h-5" />
+                </motion.button>
+                <motion.button
+                  whileTap={{ scale: 0.95 }}
                   onClick={() => setIsFullscreen(!isFullscreen)}
                   className="p-2 hover:bg-muted rounded-full transition-colors"
                 >
@@ -388,6 +447,76 @@ export function ChatBox({ isOpen, onClose, checkInHistory = amaraFullStory, curr
               </div>
             </div>
 
+            {/* Search Bar */}
+            <AnimatePresence>
+              {showSearch && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  className="overflow-hidden border-b border-border"
+                >
+                  <div className="px-6 py-3">
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <input
+                        type="text"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        placeholder="Search messages..."
+                        className="w-full pl-10 pr-4 py-2 rounded-xl border-2 border-border bg-background text-foreground focus:border-[#84CC16] outline-none transition-colors text-sm"
+                        autoFocus
+                      />
+                      {searchQuery && (
+                        <button
+                          onClick={() => setSearchQuery('')}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
+                    {searchQuery && (
+                      <p className="text-xs text-muted-foreground mt-2">
+                        Found {filteredMessages.length} message{filteredMessages.length !== 1 ? 's' : ''}
+                      </p>
+                    )}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* Date Picker */}
+            <AnimatePresence>
+              {showDatePicker && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  className="overflow-hidden border-b border-border"
+                >
+                  <div className="px-6 py-3">
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="date"
+                        value={selectedDate}
+                        onChange={(e) => setSelectedDate(e.target.value)}
+                        className="flex-1 px-4 py-2 rounded-xl border-2 border-border bg-background text-foreground focus:border-[#84CC16] outline-none transition-colors text-sm"
+                      />
+                      <motion.button
+                        whileTap={{ scale: 0.95 }}
+                        onClick={handleJumpToDate}
+                        disabled={!selectedDate}
+                        className="px-4 py-2 rounded-xl bg-[#84CC16] text-white font-semibold text-sm hover:bg-[#84CC16]/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        Jump
+                      </motion.button>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
             {/* Health Context Banner */}
             {detectedInfo.length > 0 && (
               <div className="px-6 py-3 bg-[#818CF8]/10 border-b border-[#818CF8]/20">
@@ -401,13 +530,13 @@ export function ChatBox({ isOpen, onClose, checkInHistory = amaraFullStory, curr
             )}
 
             {/* Messages Container */}
-            <div className="flex-1 overflow-y-auto p-6 space-y-4">
-              {messages.map((message, index) => {
+            <div ref={messagesContainerRef} className="flex-1 overflow-y-auto p-6 space-y-4">
+              {filteredMessages.map((message, index) => {
                 const showDatePill = index === 0 || 
-                  new Date(messages[index - 1].timestamp).toDateString() !== new Date(message.timestamp).toDateString();
+                  new Date(filteredMessages[index - 1].timestamp).toDateString() !== new Date(message.timestamp).toDateString();
                 
                 return (
-                  <div key={message.id}>
+                  <div key={message.id} data-message-id={message.id}>
                     {showDatePill && (
                       <div className="flex justify-center mb-4">
                         <div className="px-3 py-1 rounded-full bg-muted/50 text-xs text-muted-foreground font-medium">
