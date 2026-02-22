@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MapPin, Star, Clock, CheckCircle, Copy, X, ChevronRight, Search, Filter, SlidersHorizontal, Sparkles, Map } from 'lucide-react';
+import { MapPin, Star, Clock, CheckCircle, Copy, X, ChevronRight, Search, Filter, SlidersHorizontal, Sparkles, Map, Navigation } from 'lucide-react';
 import { clinics } from '@/lib/mock-data';
 import { amaraFullStory } from '@/lib/amara-story-data';
 import { Input } from '@/components/ui/input';
@@ -129,6 +129,54 @@ export function ClinicsView() {
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [mapClinic, setMapClinic] = useState<(typeof clinics)[0] | null>(null);
   const [paymentClinic, setPaymentClinic] = useState<(typeof clinics)[0] | null>(null);
+  const [userLocation, setUserLocation] = useState<string>('');
+  const [showLocationPicker, setShowLocationPicker] = useState(false);
+  const [customLocation, setCustomLocation] = useState<string>('');
+
+  // Get user's geolocation on mount if no custom location
+  useEffect(() => {
+    const savedLocation = localStorage.getItem('userCustomLocation');
+    if (savedLocation) {
+      setCustomLocation(savedLocation);
+      setUserLocation(savedLocation);
+    } else if ('geolocation' in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const { latitude, longitude } = position.coords;
+          setUserLocation(`${latitude.toFixed(4)}, ${longitude.toFixed(4)}`);
+        },
+        () => {
+          setUserLocation('Location unavailable');
+        }
+      );
+    }
+  }, []);
+
+  const handleSetLocation = () => {
+    if (customLocation.trim()) {
+      localStorage.setItem('userCustomLocation', customLocation.trim());
+      setUserLocation(customLocation.trim());
+      setShowLocationPicker(false);
+    }
+  };
+
+  const handleUseCurrentLocation = () => {
+    if ('geolocation' in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const { latitude, longitude } = position.coords;
+          const coords = `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
+          setUserLocation(coords);
+          setCustomLocation('');
+          localStorage.removeItem('userCustomLocation');
+          setShowLocationPicker(false);
+        },
+        (error) => {
+          alert('Unable to get your location. Please check permissions.');
+        }
+      );
+    }
+  };
 
   // Get today's AI analysis for context banner
   const todayEntry = amaraFullStory[amaraFullStory.length - 1];
@@ -171,9 +219,14 @@ export function ClinicsView() {
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-2xl font-bold text-foreground">Partner Clinics</h2>
-            <p className="text-sm text-muted-foreground mt-0.5">
-              {filteredClinics.length} clinic{filteredClinics.length !== 1 ? 's' : ''} available
-            </p>
+            <motion.button
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setShowLocationPicker(true)}
+              className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1 hover:text-[#84CC16] transition-colors"
+            >
+              <MapPin className="w-3 h-3" />
+              {userLocation || 'Set your location'}
+            </motion.button>
           </div>
           
           {/* Filter Sheet */}
@@ -443,6 +496,90 @@ export function ClinicsView() {
               console.log('Booking successful!');
             }}
           />
+        )}
+      </AnimatePresence>
+
+      {/* Location Picker Modal */}
+      <AnimatePresence>
+        {showLocationPicker && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4"
+            onClick={() => setShowLocationPicker(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-background rounded-3xl overflow-hidden w-full max-w-md"
+            >
+              <div className="px-6 py-4 border-b border-border flex items-center justify-between">
+                <h3 className="text-lg font-bold text-foreground">Set Your Location</h3>
+                <motion.button
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => setShowLocationPicker(false)}
+                  className="w-9 h-9 rounded-full bg-muted flex items-center justify-center"
+                >
+                  <X className="w-5 h-5 text-foreground" />
+                </motion.button>
+              </div>
+              <div className="p-6 space-y-4">
+                <p className="text-sm text-muted-foreground">
+                  Set your location to find the nearest clinics and get accurate distance estimates.
+                </p>
+                
+                <div>
+                  <label className="text-xs text-muted-foreground font-semibold mb-2 block">
+                    Custom Location (City, Address, or Coordinates)
+                  </label>
+                  <input
+                    type="text"
+                    value={customLocation}
+                    onChange={(e) => setCustomLocation(e.target.value)}
+                    placeholder="e.g. Lagos, Nigeria or 6.5244, 3.3792"
+                    className="w-full px-4 py-3 rounded-xl border-2 border-border bg-card text-foreground focus:border-[#84CC16] outline-none transition-colors"
+                  />
+                </div>
+
+                <motion.button
+                  whileTap={{ scale: 0.97 }}
+                  onClick={handleSetLocation}
+                  disabled={!customLocation.trim()}
+                  className="w-full py-3 rounded-2xl bg-[#84CC16] text-white font-bold text-sm hover:bg-[#84CC16]/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Set Location
+                </motion.button>
+
+                <div className="relative">
+                  <div className="absolute inset-0 flex items-center">
+                    <div className="w-full border-t border-border"></div>
+                  </div>
+                  <div className="relative flex justify-center text-xs uppercase">
+                    <span className="bg-background px-2 text-muted-foreground">Or</span>
+                  </div>
+                </div>
+
+                <motion.button
+                  whileTap={{ scale: 0.97 }}
+                  onClick={handleUseCurrentLocation}
+                  className="w-full py-3 rounded-2xl border-2 border-border text-foreground font-semibold text-sm hover:border-[#84CC16]/40 transition-colors flex items-center justify-center gap-2"
+                >
+                  <Navigation className="w-4 h-4" />
+                  Use Current Location
+                </motion.button>
+
+                {userLocation && (
+                  <div className="bg-muted rounded-2xl p-3">
+                    <p className="text-xs text-muted-foreground mb-1">Current Location:</p>
+                    <p className="text-sm font-semibold text-foreground">{userLocation}</p>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          </motion.div>
         )}
       </AnimatePresence>
     </div>
