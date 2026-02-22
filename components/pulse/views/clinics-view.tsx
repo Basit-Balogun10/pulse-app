@@ -124,7 +124,7 @@ export function ClinicsView() {
   const [searchQuery, setSearchQuery] = useState('');
   const [maxDistance, setMaxDistance] = useState(10);
   const [minRating, setMinRating] = useState(0);
-  const [selectedSpecialty, setSelectedSpecialty] = useState<string>('all');
+  const [selectedSpecialties, setSelectedSpecialties] = useState<string[]>([]);
   const [sortBy, setSortBy] = useState<'distance' | 'rating' | 'discount'>('distance');
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [mapClinic, setMapClinic] = useState<(typeof clinics)[0] | null>(null);
@@ -143,7 +143,7 @@ export function ClinicsView() {
   );
 
   // Get unique specialties
-  const specialties = ['all', ...Array.from(new Set(clinics.map(c => c.specialty)))];
+  const specialties = Array.from(new Set(clinics.map(c => c.specialty)));
 
   // Filter clinics
   const filteredClinics = clinics
@@ -152,7 +152,7 @@ export function ClinicsView() {
                            clinic.specialty.toLowerCase().includes(searchQuery.toLowerCase());
       const matchesDistance = clinic.distance <= maxDistance;
       const matchesRating = clinic.rating >= minRating;
-      const matchesSpecialty = selectedSpecialty === 'all' || clinic.specialty === selectedSpecialty;
+      const matchesSpecialty = selectedSpecialties.length === 0 || selectedSpecialties.includes(clinic.specialty);
       return matchesSearch && matchesDistance && matchesRating && matchesSpecialty;
     })
     .sort((a, b) => {
@@ -244,21 +244,30 @@ export function ClinicsView() {
 
                 {/* Specialty Filter */}
                 <div>
-                  <label className="text-sm font-semibold text-foreground mb-3 block">Specialty</label>
+                  <label className="text-sm font-semibold text-foreground mb-3 block">Specialties (Multi-select)</label>
                   <div className="flex gap-2 overflow-x-auto pb-2 -mx-2 px-2">
-                    {specialties.map((specialty) => (
-                      <button
-                        key={specialty}
-                        onClick={() => setSelectedSpecialty(specialty)}
-                        className={`py-2 px-4 rounded-xl text-sm font-semibold transition-colors capitalize whitespace-nowrap ${
-                          selectedSpecialty === specialty
-                            ? 'bg-[#84CC16] text-white'
-                            : 'bg-muted text-foreground hover:bg-muted/70'
-                        }`}
-                      >
-                        {specialty}
-                      </button>
-                    ))}
+                    {specialties.map((specialty) => {
+                      const isSelected = selectedSpecialties.includes(specialty);
+                      return (
+                        <button
+                          key={specialty}
+                          onClick={() => {
+                            setSelectedSpecialties(prev => 
+                              isSelected 
+                                ? prev.filter(s => s !== specialty)
+                                : [...prev, specialty]
+                            );
+                          }}
+                          className={`py-2 px-4 rounded-xl text-sm font-semibold transition-colors capitalize whitespace-nowrap ${
+                            isSelected
+                              ? 'bg-[#84CC16] text-white'
+                              : 'bg-muted text-foreground hover:bg-muted/70'
+                          }`}
+                        >
+                          {specialty}
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
 
@@ -269,7 +278,7 @@ export function ClinicsView() {
                     onClick={() => {
                       setMaxDistance(10);
                       setMinRating(0);
-                      setSelectedSpecialty('all');
+                      setSelectedSpecialties([]);
                       setSortBy('distance');
                     }}
                     className="flex-1"
