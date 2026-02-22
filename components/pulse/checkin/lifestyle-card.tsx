@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Slider } from '@/components/ui/slider';
 
 interface Props {
   onValue: (v: any) => void;
@@ -9,139 +10,273 @@ interface Props {
   value?: any;
 }
 
+const EXERCISE_ACTIVITIES = [
+  'Walking', 'Running', 'Cycling', 'Swimming', 'Yoga', 'Gym/Weights',
+  'Sports', 'Dancing', 'Hiking', 'Stretching', 'Other'
+];
+
 export function LifestyleCard({ onValue, value }: Props) {
-  const [water, setWater] = useState<boolean | null>(value?.water ?? null);
+  const [water, setWater] = useState<number>(value?.water ?? 50); // 0-100 percentage
   const [exercise, setExercise] = useState<boolean | null>(value?.exercise ?? null);
+  const [exerciseActivities, setExerciseActivities] = useState<string[]>(value?.exerciseActivities ?? []);
+  const [customActivity, setCustomActivity] = useState(value?.customActivity ?? '');
   const [meditation, setMeditation] = useState<boolean | null>(value?.meditation ?? null);
-  const [screenTime, setScreenTime] = useState<boolean | null>(value?.screenTime ?? null);
+  const [screenTime, setScreenTime] = useState<number>(value?.screenTime ?? 50); // 0-100 percentage
   const [socialTime, setSocialTime] = useState<boolean | null>(value?.socialTime ?? null);
   const [customNote, setCustomNote] = useState<string>(value?.customNote ?? '');
 
-  const update = (w: boolean | null, e: boolean | null, m: boolean | null, s: boolean | null, soc: boolean | null, note: string) => {
-    if (w !== null && e !== null && m !== null && s !== null && soc !== null) {
-      onValue({ water: w, exercise: e, meditation: m, screenTime: s, socialTime: soc, customNote: note });
+  const update = (
+    w: number,
+    e: boolean | null,
+    acts: string[],
+    custAct: string,
+    m: boolean | null,
+    s: number,
+    soc: boolean | null,
+    note: string
+  ) => {
+    // All required fields filled
+    if (e !== null && m !== null && soc !== null) {
+      onValue({
+        water: w,
+        exercise: e,
+        exerciseActivities: e ? acts : [],
+        customActivity: custAct,
+        meditation: m,
+        screenTime: s,
+        socialTime: soc,
+        customNote: note,
+      });
     }
   };
 
-  const selWater = (v: boolean) => { setWater(v); update(v, exercise, meditation, screenTime, socialTime, customNote); };
-  const selExercise = (v: boolean) => { setExercise(v); update(water, v, meditation, screenTime, socialTime, customNote); };
-  const selMeditation = (v: boolean) => { setMeditation(v); update(water, exercise, v, screenTime, socialTime, customNote); };
-  const selScreenTime = (v: boolean) => { setScreenTime(v); update(water, exercise, meditation, v, socialTime, customNote); };
-  const selSocialTime = (v: boolean) => { setSocialTime(v); update(water, exercise, meditation, screenTime, v, customNote); };
-  const handleCustomNote = (note: string) => { setCustomNote(note); update(water, exercise, meditation, screenTime, socialTime, note); };
+  const handleWater = (v: number[]) => {
+    setWater(v[0]);
+    update(v[0], exercise, exerciseActivities, customActivity, meditation, screenTime, socialTime, customNote);
+  };
 
-  const Row = ({
-    emoji,
-    question,
-    state,
-    onYes,
-    onNo,
-    yesLabel,
-    noLabel,
-  }: {
-    emoji: string;
-    question: string;
-    state: boolean | null;
-    onYes: () => void;
-    onNo: () => void;
-    yesLabel: string;
-    noLabel: string;
-  }) => (
-    <div className="flex items-center gap-3 bg-muted rounded-2xl px-4 py-3.5">
-      <span className="text-2xl">{emoji}</span>
-      <span className="flex-1 text-sm font-semibold text-foreground">{question}</span>
-      <div className="flex gap-1.5">
-        <motion.button
-          onClick={onYes}
-          whileTap={{ scale: 0.95 }}
-          className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
-            state === true ? 'bg-[#84CC16] text-white' : 'bg-card text-foreground border border-border'
-          }`}
-        >
-          {yesLabel}
-        </motion.button>
-        <motion.button
-          onClick={onNo}
-          whileTap={{ scale: 0.95 }}
-          className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
-            state === false ? 'bg-[#EF4444] text-white' : 'bg-card text-foreground border border-border'
-          }`}
-        >
-          {noLabel}
-        </motion.button>
-      </div>
-    </div>
-  );
+  const handleExercise = (v: boolean) => {
+    setExercise(v);
+    if (!v) {
+      setExerciseActivities([]);
+      setCustomActivity('');
+    }
+    update(water, v, v ? exerciseActivities : [], '', meditation, screenTime, socialTime, customNote);
+  };
+
+  const toggleActivity = (activity: string) => {
+    const newActivities = exerciseActivities.includes(activity)
+      ? exerciseActivities.filter((a) => a !== activity)
+      : [...exerciseActivities, activity];
+    setExerciseActivities(newActivities);
+    update(water, exercise, newActivities, customActivity, meditation, screenTime, socialTime, customNote);
+  };
+
+  const handleCustomActivity = (v: string) => {
+    setCustomActivity(v);
+    update(water, exercise, exerciseActivities, v, meditation, screenTime, socialTime, customNote);
+  };
+
+  const handleMeditation = (v: boolean) => {
+    setMeditation(v);
+    update(water, exercise, exerciseActivities, customActivity, v, screenTime, socialTime, customNote);
+  };
+
+  const handleScreenTime = (v: number[]) => {
+    setScreenTime(v[0]);
+    update(water, exercise, exerciseActivities, customActivity, meditation, v[0], socialTime, customNote);
+  };
+
+  const handleSocialTime = (v: boolean) => {
+    setSocialTime(v);
+    update(water, exercise, exerciseActivities, customActivity, meditation, screenTime, v, customNote);
+  };
+
+  const handleCustomNote = (note: string) => {
+    setCustomNote(note);
+    update(water, exercise, exerciseActivities, customActivity, meditation, screenTime, socialTime, note);
+  };
 
   return (
-    <div className="rounded-3xl bg-card border border-border shadow-lg p-6 select-none">
+    <div className="rounded-3xl bg-card border border-border shadow-lg p-6 select-none max-h-[75vh] flex flex-col">
       <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Lifestyle</p>
       <h3 className="text-xl font-bold text-foreground mb-5">
         Quick lifestyle snapshot for today.
       </h3>
 
-      <div className="space-y-3 max-h-[45vh] overflow-y-auto">
-        <Row
-          emoji="💧"
-          question="Enough water today?"
-          state={water}
-          onYes={() => selWater(true)}
-          onNo={() => selWater(false)}
-          yesLabel="Hydrated"
-          noLabel="Not really"
-        />
-        <Row
-          emoji="🏃"
-          question="Any physical activity?"
-          state={exercise}
-          onYes={() => selExercise(true)}
-          onNo={() => selExercise(false)}
-          yesLabel="Yes"
-          noLabel="Not today"
-        />
-        <Row
-          emoji="🧘"
-          question="Meditate or relax?"
-          state={meditation}
-          onYes={() => selMeditation(true)}
-          onNo={() => selMeditation(false)}
-          yesLabel="Yes"
-          noLabel="No time"
-        />
-        <Row
-          emoji="📱"
-          question="Healthy screen time?"
-          state={screenTime}
-          onYes={() => selScreenTime(true)}
-          onNo={() => selScreenTime(false)}
-          yesLabel="Balanced"
-          noLabel="Too much"
-        />
-        <Row
-          emoji="👥"
-          question="Social interaction?"
-          state={socialTime}
-          onYes={() => selSocialTime(true)}
-          onNo={() => selSocialTime(false)}
-          yesLabel="Good"
-          noLabel="Isolated"
-        />
-      </div>
-
-      {/* Custom input */}
-      <div className="mt-3 bg-muted rounded-2xl p-3 border-2 border-transparent focus-within:border-[#84CC16] transition-colors">
-        <div className="flex items-center gap-2 mb-1">
-          <span className="text-lg">📝</span>
-          <label className="text-xs font-semibold text-muted-foreground uppercase">Other lifestyle notes</label>
+      <div className="space-y-5 overflow-y-auto flex-1">
+        {/* Water Intake - Slider */}
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <span className="text-2xl">💧</span>
+            <span className="text-sm font-semibold text-foreground">Hydration today?</span>
+          </div>
+          <Slider
+            value={[water]}
+            onValueChange={handleWater}
+            max={100}
+            step={10}
+            className="w-full"
+          />
+          <p className="text-xs text-muted-foreground text-center">
+            {water < 40 ? 'Not enough' : water < 70 ? 'Moderate' : 'Well hydrated'}
+          </p>
         </div>
-        <input
-          type="text"
-          value={customNote}
-          onChange={(e) => handleCustomNote(e.target.value)}
-          placeholder="e.g., Ate out today, took vitamins..."
-          className="w-full bg-transparent text-sm text-foreground placeholder:text-muted-foreground focus:outline-none"
-          maxLength={100}
-        />
+
+        {/* Physical Activity - Yes/No then activities */}
+        <div className="space-y-2">
+          <div className="flex items-center gap-2 mb-2">
+            <span className="text-2xl">🏃</span>
+            <span className="text-sm font-semibold text-foreground">Any physical activity?</span>
+          </div>
+          <div className="flex gap-2">
+            <motion.button
+              onClick={() => handleExercise(true)}
+              whileTap={{ scale: 0.95 }}
+              className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all ${
+                exercise === true ? 'bg-[#84CC16] text-white' : 'bg-muted text-foreground border border-border'
+              }`}
+            >
+              Yes
+            </motion.button>
+            <motion.button
+              onClick={() => handleExercise(false)}
+              whileTap={{ scale: 0.95 }}
+              className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all ${
+                exercise === false ? 'bg-[#EF4444] text-white' : 'bg-muted text-foreground border border-border'
+              }`}
+            >
+              Not today
+            </motion.button>
+          </div>
+          <AnimatePresence>
+            {exercise === true && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                className="pt-3 space-y-2"
+              >
+                <p className="text-xs font-semibold text-muted-foreground uppercase">What activities?</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {EXERCISE_ACTIVITIES.map((activity) => (
+                    <motion.button
+                      key={activity}
+                      onClick={() => toggleActivity(activity)}
+                      whileTap={{ scale: 0.97 }}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
+                        exerciseActivities.includes(activity)
+                          ? 'bg-[#84CC16]/20 border-2 border-[#84CC16] text-[#84CC16]'
+                          : 'bg-muted border border-border text-foreground'
+                      }`}
+                    >
+                      {activity}
+                    </motion.button>
+                  ))}
+                </div>
+                {exerciseActivities.includes('Other') && (
+                  <input
+                    type="text"
+                    value={customActivity}
+                    onChange={(e) => handleCustomActivity(e.target.value)}
+                    placeholder="Specify activity..."
+                    className="w-full px-3 py-2 rounded-xl bg-muted border-2 border-transparent focus:border-[#84CC16] focus:outline-none text-sm text-foreground placeholder:text-muted-foreground"
+                  />
+                )}
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+
+        {/* Meditation */}
+        <div className="space-y-2">
+          <div className="flex items-center gap-2 mb-2">
+            <span className="text-2xl">🧘</span>
+            <span className="text-sm font-semibold text-foreground">Meditate or relax?</span>
+          </div>
+          <div className="flex gap-2">
+            <motion.button
+              onClick={() => handleMeditation(true)}
+              whileTap={{ scale: 0.95 }}
+              className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all ${
+                meditation === true ? 'bg-[#84CC16] text-white' : 'bg-muted text-foreground border border-border'
+              }`}
+            >
+              Yes
+            </motion.button>
+            <motion.button
+              onClick={() => handleMeditation(false)}
+              whileTap={{ scale: 0.95 }}
+              className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all ${
+                meditation === false ? 'bg-[#EF4444] text-white' : 'bg-muted text-foreground border border-border'
+              }`}
+            >
+              No time
+            </motion.button>
+          </div>
+        </div>
+
+        {/* Screen Time - Slider */}
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <span className="text-2xl">📱</span>
+            <span className="text-sm font-semibold text-foreground">Screen time today?</span>
+          </div>
+          <Slider
+            value={[screenTime]}
+            onValueChange={handleScreenTime}
+            max={100}
+            step={10}
+            className="w-full"
+          />
+          <p className="text-xs text-muted-foreground text-center">
+            {screenTime < 40 ? 'Minimal' : screenTime < 70 ? 'Balanced' : 'Too much'}
+          </p>
+        </div>
+
+        {/* Social Interaction */}
+        <div className="space-y-2">
+          <div className="flex items-center gap-2 mb-2">
+            <span className="text-2xl">👥</span>
+            <span className="text-sm font-semibold text-foreground">Social interaction?</span>
+          </div>
+          <div className="flex gap-2">
+            <motion.button
+              onClick={() => handleSocialTime(true)}
+              whileTap={{ scale: 0.95 }}
+              className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all ${
+                socialTime === true ? 'bg-[#84CC16] text-white' : 'bg-muted text-foreground border border-border'
+              }`}
+            >
+              Good
+            </motion.button>
+            <motion.button
+              onClick={() => handleSocialTime(false)}
+              whileTap={{ scale: 0.95 }}
+              className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all ${
+                socialTime === false ? 'bg-[#EF4444] text-white' : 'bg-muted text-foreground border border-border'
+              }`}
+            >
+              Isolated
+            </motion.button>
+          </div>
+        </div>
+
+        {/* Custom Notes */}
+        <div className="bg-muted rounded-2xl p-3 border-2 border-transparent focus-within:border-[#84CC16] transition-colors">
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-lg">📝</span>
+            <label className="text-xs font-semibold text-muted-foreground uppercase">Other lifestyle notes</label>
+          </div>
+          <input
+            type="text"
+            value={customNote}
+            onChange={(e) => handleCustomNote(e.target.value)}
+            placeholder="e.g., Ate out today, took vitamins..."
+            className="w-full bg-transparent text-sm text-foreground placeholder:text-muted-foreground focus:outline-none"
+            maxLength={100}
+          />
+        </div>
       </div>
     </div>
   );

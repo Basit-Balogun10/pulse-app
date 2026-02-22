@@ -17,8 +17,8 @@ const STEPS = [
   { title: 'Lifestyle snapshot', subtitle: 'Quick baseline — no judgment here.' },
 ];
 
-const CONDITIONS = ['Diabetes', 'Hypertension', 'Asthma', 'Heart Disease', 'Obesity', 'Arthritis', 'Thyroid disorder', 'None'];
-const FAMILY_HISTORY = ['Diabetes', 'Hypertension', 'Heart Disease', 'Cancer', 'Stroke', 'None'];
+const CONDITIONS = ['Diabetes', 'Hypertension', 'Asthma', 'Heart Disease', 'Obesity', 'Arthritis', 'Thyroid disorder', 'Other', 'None'];
+const FAMILY_HISTORY = ['Diabetes', 'Hypertension', 'Heart Disease', 'Cancer', 'Stroke', 'Other', 'None'];
 const BLOOD_TYPES = ['A+', 'A-', 'B+', 'B-', 'O+', 'O-', 'AB+', 'AB-', "Don't know"];
 
 const Chip = ({ label, selected, onToggle }: { label: string; selected: boolean; onToggle: () => void }) => (
@@ -66,8 +66,10 @@ export function OnboardingModal({ isOpen, onSave }: OnboardingModalProps) {
   const [form, setForm] = useState({
     name: '', age: '', sex: '', height: '', weight: '',
     medicalConditions: [] as string[],
+    customMedicalCondition: '',
     currentMedications: '', allergies: '',
     familyHistory: [] as string[],
+    customFamilyHistory: '',
     smokingStatus: '', alcoholUse: '',
     bloodType: '', lastCheckup: '',
   });
@@ -175,6 +177,15 @@ export function OnboardingModal({ isOpen, onSave }: OnboardingModalProps) {
                             <Chip key={c} label={c} selected={form.medicalConditions.includes(c)} onToggle={() => toggleArray('medicalConditions', c)} />
                           ))}
                         </div>
+                        {form.medicalConditions.includes('Other') && (
+                          <input
+                            type="text"
+                            value={form.customMedicalCondition}
+                            onChange={(e) => set('customMedicalCondition', e.target.value)}
+                            placeholder="Please specify..."
+                            className="w-full px-4 py-3 rounded-xl bg-muted border-2 border-transparent focus:border-[#84CC16] focus:outline-none text-foreground placeholder:text-muted-foreground mt-2"
+                          />
+                        )}
                       </div>
                       <div>
                         <label className="block text-sm font-semibold text-foreground mb-2">Family History</label>
@@ -183,6 +194,15 @@ export function OnboardingModal({ isOpen, onSave }: OnboardingModalProps) {
                             <Chip key={c} label={c} selected={form.familyHistory.includes(c)} onToggle={() => toggleArray('familyHistory', c)} />
                           ))}
                         </div>
+                        {form.familyHistory.includes('Other') && (
+                          <input
+                            type="text"
+                            value={form.customFamilyHistory}
+                            onChange={(e) => set('customFamilyHistory', e.target.value)}
+                            placeholder="Please specify..."
+                            className="w-full px-4 py-3 rounded-xl bg-muted border-2 border-transparent focus:border-[#84CC16] focus:outline-none text-foreground placeholder:text-muted-foreground mt-2"
+                          />
+                        )}
                       </div>
                       <Field label="Current Medications" name="currentMedications" value={form.currentMedications} onChange={handleChange} placeholder="e.g. Metformin 500mg" />
                       <Field label="Allergies" name="allergies" value={form.allergies} onChange={handleChange} placeholder="e.g. Penicillin, Peanuts" />

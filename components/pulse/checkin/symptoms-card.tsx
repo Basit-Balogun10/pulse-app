@@ -25,7 +25,7 @@ const LOCATIONS = [
   { id: 'other', label: 'Other', emoji: '📍' },
 ];
 
-const TYPES = ['Pain', 'Ache', 'Numbness', 'Tingling', 'Swelling', 'Rash', 'Burning', 'Stiffness', 'Itching', 'Pressure'];
+const TYPES = ['Pain', 'Ache', 'Numbness', 'Tingling', 'Swelling', 'Rash', 'Burning', 'Stiffness', 'Itching', 'Pressure', 'Other'];
 
 const INTENSITY = [
   { value: 'mild', label: 'Mild', color: '#FBBF24', bg: '#FBBF2415' },
@@ -36,12 +36,23 @@ const INTENSITY = [
 export function SymptomsCard({ onValue, value }: Props) {
   const [noSymptoms, setNoSymptoms] = useState(value?.none ?? false);
   const [location, setLocation] = useState<string | null>(value?.location ?? null);
+  const [customLocation, setCustomLocation] = useState(value?.customLocation ?? '');
   const [type, setType] = useState<string | null>(value?.type ?? null);
+  const [customType, setCustomType] = useState(value?.customType ?? '');
   const [intensity, setIntensity] = useState<string | null>(value?.intensity ?? null);
 
-  const signal = (ns: boolean, loc: string | null, t: string | null, i: string | null) => {
+  const signal = (ns: boolean, loc: string | null, t: string | null, i: string | null, customLoc?: string, customT?: string) => {
     if (ns) { onValue({ none: true }); return; }
-    if (loc && t && i) { onValue({ location: loc, type: t, intensity: i }); return; }
+    if (loc && t && i) { 
+      onValue({ 
+        location: loc, 
+        customLocation: customLoc || '', 
+        type: t, 
+        customType: customT || '', 
+        intensity: i 
+      }); 
+      return; 
+    }
     onValue(null); // incomplete — disables Next
   };
 
@@ -60,7 +71,9 @@ export function SymptomsCard({ onValue, value }: Props) {
     const next = location === loc ? null : loc;
     setNoSymptoms(false);
     setLocation(next);
+    if (next !== 'other') setCustomLocation('');
     setType(null);
+    setCustomType('');
     setIntensity(null);
     signal(false, next, null, null);
   };
@@ -68,14 +81,15 @@ export function SymptomsCard({ onValue, value }: Props) {
   const selectType = (t: string) => {
     const next = type === t ? null : t;
     setType(next);
+    if (next !== 'Other') setCustomType('');
     setIntensity(null);
-    signal(false, location, next, null);
+    signal(false, location, next, null, customLocation, '');
   };
 
   const selectIntensity = (i: string) => {
     const next = intensity === i ? null : i;
     setIntensity(next);
-    signal(false, location, type, next);
+    signal(false, location, type, next, customLocation, customType);
   };
 
   return (
@@ -120,6 +134,18 @@ export function SymptomsCard({ onValue, value }: Props) {
               </motion.button>
             ))}
           </div>
+          {location === 'other' && (
+            <input
+              type="text"
+              value={customLocation}
+              onChange={(e) => {
+                setCustomLocation(e.target.value);
+                if (type && intensity) signal(false, location, type, intensity, e.target.value, customType);
+              }}
+              placeholder="Please specify location..."
+              className="w-full px-4 py-3 rounded-xl bg-muted border-2 border-transparent focus:border-[#818CF8] focus:outline-none text-foreground placeholder:text-muted-foreground mb-4"
+            />
+          )}
         </motion.div>
       )}
 
@@ -144,6 +170,18 @@ export function SymptomsCard({ onValue, value }: Props) {
                 </motion.button>
               ))}
             </div>
+            {type === 'Other' && (
+              <input
+                type="text"
+                value={customType}
+                onChange={(e) => {
+                  setCustomType(e.target.value);
+                  if (intensity) signal(false, location, type, intensity, customLocation, e.target.value);
+                }}
+                placeholder="Please specify symptom type..."
+                className="w-full px-4 py-3 rounded-xl bg-muted border-2 border-transparent focus:border-[#818CF8] focus:outline-none text-foreground placeholder:text-muted-foreground mb-4"
+              />
+            )}
           </motion.div>
         )}
       </AnimatePresence>

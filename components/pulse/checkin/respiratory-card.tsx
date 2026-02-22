@@ -18,12 +18,14 @@ const OPTIONS = [
   { id: 'wheezing', emoji: '🌬️', label: 'Wheezing' },
   { id: 'runny_nose', emoji: '🤧', label: 'Runny nose' },
   { id: 'sore_throat', emoji: '😣', label: 'Sore throat' },
+  { id: 'other', emoji: '📝', label: 'Other' },
 ];
 
 export function RespiratoryCard({ onValue, value }: Props) {
   const [selected, setSelected] = useState<Set<string>>(
     new Set(value ?? [])
   );
+  const [customOther, setCustomOther] = useState('');
 
   const toggle = (id: string) => {
     const next = new Set(selected);
@@ -86,6 +88,17 @@ export function RespiratoryCard({ onValue, value }: Props) {
             </motion.button>
           );
         })}
+        {selected.has('other') && (
+          <motion.input
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            type="text"
+            value={customOther}
+            onChange={(e) => setCustomOther(e.target.value)}
+            placeholder="Please specify..."
+            className="w-full px-4 py-3 rounded-xl bg-muted border-2 border-transparent focus:border-[#84CC16] focus:outline-none text-foreground placeholder:text-muted-foreground"
+          />
+        )}
       </div>
     </div>
   );
