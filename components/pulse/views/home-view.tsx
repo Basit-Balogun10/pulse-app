@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Flame, MessageCircle, Zap, Sparkles, ChevronRight } from 'lucide-react';
+import { Flame, MessageCircle, Zap, Sparkles, ChevronRight, Gift } from 'lucide-react';
 import { userProfile, mockHealthData } from '@/lib/mock-data';
 import { amaraFullStory } from '@/lib/amara-story-data';
 import { DayCarousel } from '@/components/pulse/day-carousel';
@@ -17,6 +17,23 @@ import { getTodayDate } from '@/lib/utils';
 
 // Today is calculated dynamically
 const TODAY = getTodayDate();
+
+// Calculate streak bonus discount (1% per 3 days of streak, max 10%)
+const calculateStreakBonus = (streak: number): number => {
+  const bonus = Math.floor(streak / 3);
+  return Math.min(bonus, 10);
+};
+
+// Get base tier discount
+const getTierDiscount = (tier: string): number => {
+  switch(tier.toLowerCase()) {
+    case 'starter': return 10;
+    case 'regular': return 20;
+    case 'committed': return 30;
+    case 'champion': return 40;
+    default: return 10;
+  }
+};
 
 const SUBHEADINGS = [
   'Consistency is your superpower.',
@@ -39,6 +56,7 @@ export function HomeView({ onChatOpen, onStartCheckIn, todayEntry }: HomeViewPro
   const [showAnalysisModal, setShowAnalysisModal] = useState(false);
   const [showDetailedModal, setShowDetailedModal] = useState(false);
   const [showDetailedMetrics, setShowDetailedMetrics] = useState(false);
+  const [streakExpanded, setStreakExpanded] = useState(false);
   
   const { nudgeCount, shouldAutoBook, shouldShowNudge } = useNudgeTracking();
 
@@ -70,6 +88,13 @@ export function HomeView({ onChatOpen, onStartCheckIn, todayEntry }: HomeViewPro
   // Get pre-generated AI analysis overview from today's entry
   const analysisOverview = todayEntry?.aiAnalysis?.overview || todayEntry?.aiAnalysis || null;
   const selectedEntry = amaraFullStory.find((d) => d.date === selectedDate) ?? null;
+
+  // Calculate total discount
+  const baseDiscount = getTierDiscount(userProfile.tier);
+  const streakBonus = calculateStreakBonus(userProfile.streak);
+  const totalDiscount = baseDiscount + streakBonus;
+  const nextMilestone = Math.ceil(userProfile.streak / 3) * 3;
+  const daysToNextBonus = nextMilestone - userProfile.streak;
 
   const item = (i: number) => ({
     hidden: { opacity: 0, y: 16 },
@@ -113,23 +138,70 @@ export function HomeView({ onChatOpen, onStartCheckIn, todayEntry }: HomeViewPro
             <DayCarousel onDaySelect={handleDaySelect} selectedDate={selectedDate} missedDays={missedDays} />
           </motion.div>
 
-          {/* Streak card */}
+          {/* Streak card with collapsible discount details */}
           <motion.div
             variants={item(1)} initial="hidden" animate="visible"
-            className="rounded-3xl p-5 shadow-sm"
-            style={{ background: 'linear-gradient(135deg, #84CC16 0%, #F97316 100%)' }}
+            onClick={() => setStreakExpanded(!streakExpanded)}
+            className="rounded-3xl p-5 shadow-lg border border-white/10 cursor-pointer"
+            style={{ background: 'linear-gradient(135deg, rgba(132, 204, 22, 0.85) 0%, rgba(249, 115, 22, 0.85) 100%)' }}
           >
             <div className="flex items-center justify-between">
-              <div>
-                <p className="text-white/80 text-xs font-semibold uppercase tracking-wider mb-1">Current Streak</p>
-                <div className="flex items-center gap-2">
+              <div className="flex-1">
+                <p className="text-white/90 text-xs font-semibold uppercase tracking-wider mb-1">Current Streak</p>
+                <div className="flex items-center gap-2 mb-2">
                   <Flame className="w-7 h-7 text-white" fill="white" />
                   <span className="text-4xl font-bold text-white">{userProfile.streak}</span>
-                  <span className="text-white/70 text-base">days</span>
+                  <span className="text-white/80 text-base">days</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Gift className="w-4 h-4 text-white/90" />
+                  <span className="text-white font-bold text-lg">{totalDiscount}% OFF</span>
+                  <span className="text-white/70 text-sm">clinic visits</span>
                 </div>
               </div>
-              <div className="text-5xl">🔥</div>
+              <div className="flex flex-col items-center gap-2">
+                <div className="text-5xl">🔥</div>
+                <motion.div
+                  animate={{ rotate: streakExpanded ? 180 : 0 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <ChevronRight className="w-5 h-5 text-white/60 rotate-90" />
+                </motion.div>
+              </div>
             </div>
+
+            <motion.div
+              initial={false}
+              animate={{ height: streakExpanded ? 'auto' : 0, opacity: streakExpanded ? 1 : 0 }}
+              transition={{ duration: 0.3 }}
+              className="overflow-hidden"
+            >
+              <div className="bg-white/15 backdrop-blur-sm rounded-2xl p-4 border border-white/20 mt-4">
+                <p className="text-white/90 text-xs font-semibold uppercase tracking-wider mb-3">Discount Breakdown</p>
+                
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-white/80 text-sm">Base ({userProfile.tier})</span>
+                    <span className="text-white font-bold text-sm">{baseDiscount}%</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-white/80 text-sm">Streak Bonus</span>
+                    <span className="text-white font-bold text-sm">+{streakBonus}%</span>
+                  </div>
+                </div>
+
+                {streakBonus < 10 && (
+                  <div className="flex items-center gap-2 mt-3 pt-3 border-t border-white/20">
+                    <Sparkles className="w-3.5 h-3.5 text-white/70" />
+                    <p className="text-white/70 text-xs">
+                      {daysToNextBonus === 1 
+                        ? '1 more day for +1% bonus!' 
+                        : `${daysToNextBonus} days to +1% bonus`}
+                    </p>
+                  </div>
+                )}
+              </div>
+            </motion.div>
           </motion.div>
 
           {/* Today CTA - only shown when no entry yet */}

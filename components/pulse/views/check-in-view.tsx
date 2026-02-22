@@ -98,7 +98,7 @@ export function CheckInView({ onComplete }: CheckInViewProps) {
       </div>
 
       {/* Card Area */}
-      <div className="flex-1 flex flex-col items-center justify-start relative px-4 pt-4 pb-2 overflow-hidden w-full">
+      <div className="flex-1 flex items-start justify-center relative px-4 pt-4 pb-2 overflow-hidden">
         <AnimatePresence mode="wait" custom={direction}>
           <motion.div
             key={currentIndex}
@@ -108,7 +108,7 @@ export function CheckInView({ onComplete }: CheckInViewProps) {
             animate="center"
             exit="exit"
             transition={{ duration: 0.35, ease: [0.25, 0.46, 0.45, 0.94] }}
-            className="w-full max-w-md h-full flex flex-col justify-center"
+            className="w-full max-w-md"
           >
             <CardComponent
               onValue={handleValue}
