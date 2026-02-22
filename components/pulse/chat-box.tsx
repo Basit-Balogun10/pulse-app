@@ -35,10 +35,12 @@ export function ChatBox({ isOpen, onClose, checkInHistory = amaraFullStory, curr
   const [isLoading, setIsLoading] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
+  const [recordingDuration, setRecordingDuration] = useState(0);
   const [detectedInfo, setDetectedInfo] = useState<ChatDetection[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
+  const recordingIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -247,11 +249,19 @@ export function ChatBox({ isOpen, onClose, checkInHistory = amaraFullStory, curr
   const handleVoiceInput = () => {
     if (isRecording) {
       setIsRecording(false);
+      if (recordingIntervalRef.current) {
+        clearInterval(recordingIntervalRef.current);
+        recordingIntervalRef.current = null;
+      }
+      
       // Simulate voice input completion
+      const duration = recordingDuration;
+      setRecordingDuration(0);
+      
       const userMessage: Message = {
         id: Date.now().toString(),
         type: 'user',
-        text: '🎤 Voice message: "How can I improve my sleep quality?"',
+        text: `🎤 Voice message (${duration}s): "How can I improve my sleep quality?"`,
         timestamp: new Date(),
       };
       setMessages((prev) => [...prev, userMessage]);
@@ -269,6 +279,10 @@ export function ChatBox({ isOpen, onClose, checkInHistory = amaraFullStory, curr
       }, 1000);
     } else {
       setIsRecording(true);
+      setRecordingDuration(0);
+      recordingIntervalRef.current = setInterval(() => {
+        setRecordingDuration(prev => prev + 1);
+      }, 1000);
     }
   };
 
@@ -442,24 +456,31 @@ export function ChatBox({ isOpen, onClose, checkInHistory = amaraFullStory, curr
                   }`}
                 >
                   <Mic className="w-4 h-4" />
-                  <span>{isRecording ? 'Recording...' : 'Voice'}</span>
+                  <span>{isRecording ? `Recording... ${recordingDuration}s` : 'Voice'}</span>
                 </motion.button>
               </div>
 
               {/* Text Input + Send */}
               <form onSubmit={handleSendMessage} className="flex gap-3">
-                <input
-                  type="text"
+                <textarea
                   value={inputValue}
                   onChange={(e) => setInputValue(e.target.value)}
-                  placeholder="Ask me anything..."
-                  className="flex-1 px-4 py-3 rounded-2xl bg-muted border-2 border-transparent focus:border-[#84CC16] focus:outline-none text-foreground"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      handleSendMessage(e);
+                    }
+                  }}
+                  placeholder="Ask me anything... (Shift+Enter for new line)"
+                  rows={1}
+                  className="flex-1 px-4 py-3 rounded-2xl bg-muted border-2 border-transparent focus:border-[#84CC16] focus:outline-none text-foreground resize-none max-h-32 min-h-[48px]"
+                  style={{ fieldSizing: 'content' } as any}
                 />
                 <motion.button
                   whileTap={{ scale: 0.97 }}
                   type="submit"
                   disabled={!inputValue.trim() || isLoading}
-                  className="bg-[#84CC16] text-white p-3 rounded-2xl hover:bg-[#84CC16]/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                  className="bg-[#84CC16] text-white p-3 rounded-2xl hover:bg-[#84CC16]/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center self-end"
                 >
                   <Send className="w-5 h-5" />
                 </motion.button>

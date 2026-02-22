@@ -42,6 +42,17 @@ export function HomeView({ onChatOpen, onStartCheckIn, todayEntry }: HomeViewPro
 
   useEffect(() => {
     setSubheading(SUBHEADINGS[Math.floor(Math.random() * SUBHEADINGS.length)]);
+    
+    // Rotate subheadings every 4 seconds
+    const interval = setInterval(() => {
+      setSubheading(prev => {
+        const currentIndex = SUBHEADINGS.indexOf(prev);
+        const nextIndex = (currentIndex + 1) % SUBHEADINGS.length;
+        return SUBHEADINGS[nextIndex];
+      });
+    }, 4000);
+    
+    return () => clearInterval(interval);
   }, []);
 
   const handleDaySelect = (date: string) => {

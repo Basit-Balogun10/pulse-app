@@ -183,11 +183,11 @@ export function ClinicsView() {
                 <SlidersHorizontal className="h-5 w-5" />
               </Button>
             </SheetTrigger>
-            <SheetContent side="bottom" className="h-[85vh]">
-              <SheetHeader>
+            <SheetContent side="bottom" className="h-[85vh] rounded-t-3xl">
+              <SheetHeader className="px-2">
                 <SheetTitle>Filter & Sort</SheetTitle>
               </SheetHeader>
-              <div className="py-6 space-y-6">
+              <div className="py-6 px-2 space-y-6">
                 {/* Sort By */}
                 <div>
                   <label className="text-sm font-semibold text-foreground mb-3 block">Sort By</label>
@@ -245,12 +245,12 @@ export function ClinicsView() {
                 {/* Specialty Filter */}
                 <div>
                   <label className="text-sm font-semibold text-foreground mb-3 block">Specialty</label>
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="flex gap-2 overflow-x-auto pb-2 -mx-2 px-2">
                     {specialties.map((specialty) => (
                       <button
                         key={specialty}
                         onClick={() => setSelectedSpecialty(specialty)}
-                        className={`py-2 px-3 rounded-xl text-sm font-semibold transition-colors capitalize ${
+                        className={`py-2 px-4 rounded-xl text-sm font-semibold transition-colors capitalize whitespace-nowrap ${
                           selectedSpecialty === specialty
                             ? 'bg-[#84CC16] text-white'
                             : 'bg-muted text-foreground hover:bg-muted/70'
@@ -290,13 +290,13 @@ export function ClinicsView() {
 
         {/* Search Bar */}
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
           <Input
             type="text"
             placeholder="Search clinics or specialties..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10 rounded-2xl border-2 focus-visible:ring-[#84CC16]"
+            className="pl-12 py-6 rounded-2xl border-2 focus-visible:ring-[#84CC16] text-base"
           />
         </div>
 
