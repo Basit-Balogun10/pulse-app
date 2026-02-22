@@ -100,7 +100,6 @@ export function RespiratoryCard({ onValue, value }: Props) {
           />
         )}
       </div>
-      </div>
     </div>
   );
 }
