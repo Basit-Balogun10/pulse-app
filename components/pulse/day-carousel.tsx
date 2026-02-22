@@ -23,12 +23,11 @@ export function DayCarousel({ onDaySelect, selectedDate, missedDays = [] }: DayC
   const [days, setDays] = useState<Array<{ date: string; label: string }>>([]);
 
   useEffect(() => {
-    // Show last 6 days from Amara's story
+    // Show all 60 days from Amara's story
     const daysList = [];
     const totalDays = amaraFullStory.length;
-    const startIdx = Math.max(0, totalDays - 6); // Last 6 days
     
-    for (let i = startIdx; i < totalDays; i++) {
+    for (let i = 0; i < totalDays; i++) {
       const entry = amaraFullStory[i];
       const date = new Date(entry.date);
       const day = date.getDate();
@@ -81,7 +80,7 @@ export function DayCarousel({ onDaySelect, selectedDate, missedDays = [] }: DayC
         <PopoverContent className="w-auto p-0" align="start">
           <div className="p-4">
             <DateTimePicker
-              value={selectedDate.toISOString().split('T')[0]}
+              value={selectedDate}
               onChange={(val) => handleDateJump(new Date(val))}
               placeholder="Jump to date"
             />
@@ -103,6 +102,7 @@ export function DayCarousel({ onDaySelect, selectedDate, missedDays = [] }: DayC
           return (
             <motion.button
               key={day.date}
+              data-date={day.date}
               onClick={() => onDaySelect(day.date)}
               whileTap={{ scale: 0.9 }}
               className={`shrink-0 flex flex-col items-center gap-1.5 py-2.5 px-3.5 rounded-xl transition-all ${

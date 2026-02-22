@@ -108,7 +108,7 @@ export function HomeView({ onChatOpen, onStartCheckIn, todayEntry }: HomeViewPro
       <div className="flex-1 overflow-y-auto">
         <div className="px-4 py-4 space-y-4 max-w-2xl mx-auto">
 
-          {/* Day carousel — negative margin to stretch edge-to-edge */}
+          {/* Day carousel - negative margin to stretch edge-to-edge */}
           <motion.div variants={item(0)} initial="hidden" animate="visible" className="-mx-4">
             <DayCarousel onDaySelect={handleDaySelect} selectedDate={selectedDate} missedDays={missedDays} />
           </motion.div>
@@ -132,7 +132,7 @@ export function HomeView({ onChatOpen, onStartCheckIn, todayEntry }: HomeViewPro
             </div>
           </motion.div>
 
-          {/* Today CTA — only shown when no entry yet */}
+          {/* Today CTA - only shown when no entry yet */}
           {isToday && !hasTodayEntry && (
             <motion.div
               variants={item(2)} initial="hidden" animate="visible"
@@ -157,15 +157,15 @@ export function HomeView({ onChatOpen, onStartCheckIn, todayEntry }: HomeViewPro
             </motion.div>
           )}
 
-          {/* AI Analysis Card — only when today's check-in is complete */}
-          {isToday && hasTodayEntry && (
+          {/* AI Analysis Card - shown when check-in is complete (today or past day) */}
+          {((isToday && hasTodayEntry) || (!isToday && selectedEntry)) && (
             <motion.div
-              variants={item(2)} initial="hidden" animate="visible"
+              variants={item(3)} initial="hidden" animate="visible"
               onClick={handleOpenAnalysis}
               whileTap={{ scale: 0.98 }}
               className="bg-gradient-to-br from-[#818CF8]/10 to-[#A855F7]/10 rounded-3xl p-5 border border-[#818CF8]/20 cursor-pointer hover:border-[#818CF8]/40 transition-colors relative"
             >
-              {shouldShowNudge && (
+              {isToday && shouldShowNudge && (
                 <Badge className="absolute top-4 right-4 bg-[#F97316] text-white border-0 px-2 py-0.5 text-xs font-bold">
                   {nudgeCount} {nudgeCount === 1 ? 'Nudge' : 'Nudges'}
                 </Badge>
@@ -175,21 +175,21 @@ export function HomeView({ onChatOpen, onStartCheckIn, todayEntry }: HomeViewPro
                   <Sparkles className="w-5 h-5 text-[#818CF8]" />
                 </div>
                 <div>
-                  <p className="font-bold text-foreground text-sm">AI Analysis Available</p>
+                  <p className="font-bold text-foreground text-sm">AI Analysis {isToday ? 'Available' : `from ${selectedDate}`}</p>
                   <p className="text-xs text-muted-foreground">
-                    {shouldAutoBook 
+                    {isToday && shouldAutoBook 
                       ? 'Auto-booking recommended' 
-                      : shouldShowNudge 
+                      : isToday && shouldShowNudge 
                         ? 'Checkup recommended' 
-                        : 'Tap to view today&apos;s insights'
+                        : 'Tap to view insights'
                     }
                   </p>
                 </div>
               </div>
               <p className="text-sm text-foreground/70 leading-relaxed">
-                {shouldAutoBook 
+                {isToday && shouldAutoBook 
                   ? `You&apos;ve ignored ${nudgeCount} checkup recommendations. We recommend immediate booking with 100% discount.`
-                  : 'Your daily check-in has been analyzed. View personalized health insights and recommendations based on your entries.'
+                  : (selectedEntry?.aiAnalysis?.summary || 'Your daily check-in has been analyzed. View personalized health insights and recommendations based on your entries.')
                 }
               </p>
             </motion.div>
@@ -198,22 +198,28 @@ export function HomeView({ onChatOpen, onStartCheckIn, todayEntry }: HomeViewPro
           {/* Metrics card */}
           <motion.div
             key={selectedDate}
-            variants={item(3)} initial="hidden" animate="visible"
-            className="bg-card rounded-3xl p-5 border border-border"
+            variants={item(4)} initial="hidden" animate="visible"
+            onClick={() => {
+              if (hasTodayEntry || (selectedEntry && !isToday)) {
+                setShowDetailedMetrics(true);
+              }
+            }}
+            whileTap={(hasTodayEntry || (selectedEntry && !isToday)) ? { scale: 0.98 } : {}}
+            className={`bg-card rounded-3xl p-5 border border-border ${
+              (hasTodayEntry || (selectedEntry && !isToday)) 
+                ? 'cursor-pointer hover:border-[#84CC16]/40 transition-colors' 
+                : ''
+            }`}
           >
             <div className="flex items-center justify-between mb-3">
               <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                 {hasTodayEntry ? "Today's Check-in" : isToday ? "Today's Data" : selectedDate}
               </p>
-              {(hasTodayEntry || selectedEntry) && (
-                <motion.button
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => setShowDetailedMetrics(true)}
-                  className="flex items-center gap-1 text-xs font-semibold text-[#84CC16] hover:text-[#84CC16]/80 transition-colors"
-                >
+              {(hasTodayEntry || (selectedEntry && !isToday)) && (
+                <div className="flex items-center gap-1 text-xs font-semibold text-[#84CC16]">
                   See More
                   <ChevronRight className="w-3.5 h-3.5" />
-                </motion.button>
+                </div>
               )}
             </div>
 
@@ -231,7 +237,7 @@ export function HomeView({ onChatOpen, onStartCheckIn, todayEntry }: HomeViewPro
                   </div>
                 ))}
               </div>
-            ) : selectedEntry ? (
+            ) : selectedEntry && !isToday ? (
               <div className="grid grid-cols-2 gap-3">
                 {[
                   { label: 'Energy', value: `${selectedEntry.energy}/5`, emoji: '⚡' },
@@ -246,7 +252,9 @@ export function HomeView({ onChatOpen, onStartCheckIn, todayEntry }: HomeViewPro
                 ))}
               </div>
             ) : (
-              <p className="text-sm text-muted-foreground text-center py-6">No data for this day.</p>
+              <p className="text-sm text-muted-foreground text-center py-6">
+                {isToday ? "Complete today's check-in to see metrics" : "No data for this day."}
+              </p>
             )}
           </motion.div>
 

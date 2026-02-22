@@ -11,29 +11,54 @@ import {
   Smile,
   Heart,
   ChevronDown,
+  Check,
 } from 'lucide-react';
 import { amaraFullStory } from '@/lib/amara-story-data';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Button } from '@/components/ui/button';
 
 export function AnalyticsView() {
-  const [timeRange, setTimeRange] = useState<'7d' | '14d' | '30d'>('14d');
-  const [selectedMetric, setSelectedMetric] = useState<'all' | 'energy' | 'mood' | 'sleep'>('all');
+  const [timeRange, setTimeRange] = useState<'7d' | '14d' | '30d' | '60d'>('14d');
+  const [selectedMetric, setSelectedMetric] = useState<'all' | 'energy' | 'mood' | 'sleep' | 'appetite'>('all');
+  const [isTimeRangeOpen, setIsTimeRangeOpen] = useState(false);
+
+  const timeRangeOptions = [
+    { value: '7d', label: 'Last 7 days' },
+    { value: '14d', label: 'Last 14 days' },
+    { value: '30d', label: 'Last 30 days' },
+    { value: '60d', label: 'Last 60 days' },
+  ] as const;
+
+  const selectedOption = timeRangeOptions.find(opt => opt.value === timeRange);
 
   // Prepare chart data from Amara's full story
-  const chartData = amaraFullStory.map((entry) => ({
-    date: new Date(entry.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-    energy: entry.energy,
-    mood: entry.mood,
-    sleep: entry.sleep,
-    appetite: entry.appetite,
-  }));
+  const chartData = amaraFullStory.map((entry) => {
+    // Convert mood and appetite to numeric values
+    const moodMap: Record<string, number> = { 'positive': 10, 'neutral': 7, 'low': 4, 'anxious': 3 };
+    const appetiteMap: Record<string, number> = { 'great': 10, 'good': 7, 'low': 4, 'very low': 2 };
+    
+    return {
+      date: new Date(entry.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+      energy: entry.energy * 2, // Scale to 10
+      mood: moodMap[entry.mood] || 5,
+      sleep: entry.sleep.hours >= 10 ? 10 : Math.round(entry.sleep.hours),
+      appetite: appetiteMap[entry.appetite] || 5,
+    };
+  });
 
   // Calculate averages
   const averages = {
-    energy: Math.round(amaraFullStory.reduce((sum, e) => sum + e.energy, 0) / amaraFullStory.length),
-    mood: Math.round(amaraFullStory.reduce((sum, e) => sum + e.mood, 0) / amaraFullStory.length),
-    sleep: Math.round(amaraFullStory.reduce((sum, e) => sum + e.sleep, 0) / amaraFullStory.length),
-    appetite: Math.round(amaraFullStory.reduce((sum, e) => sum + e.appetite, 0) / amaraFullStory.length),
+    energy: Math.round((amaraFullStory.reduce((sum, e) => sum + (e.energy * 2), 0) / amaraFullStory.length) * 10) / 10,
+    mood: Math.round((amaraFullStory.reduce((sum, e) => {
+      const moodMap: Record<string, number> = { 'positive': 10, 'neutral': 7, 'low': 4, 'anxious': 3 };
+      return sum + (moodMap[e.mood] || 5);
+    }, 0) / amaraFullStory.length) * 10) / 10,
+    sleep: Math.round((amaraFullStory.reduce((sum, e) => sum + e.sleep.hours, 0) / amaraFullStory.length) * 10) / 10,
+    appetite: Math.round((amaraFullStory.reduce((sum, e) => {
+      const appetiteMap: Record<string, number> = { 'great': 10, 'good': 7, 'low': 4, 'very low': 2 };
+      return sum + (appetiteMap[e.appetite] || 5);
+    }, 0) / amaraFullStory.length) * 10) / 10,
   };
 
   // Calculate trends (comparing first half vs second half)
@@ -41,14 +66,29 @@ export function AnalyticsView() {
   const firstHalf = amaraFullStory.slice(0, midpoint);
   const secondHalf = amaraFullStory.slice(midpoint);
 
-  const calculateAverage = (arr: typeof amaraFullStory, key: keyof typeof amaraFullStory[0]) => {
-    return arr.reduce((sum, e) => sum + (e[key] as number), 0) / arr.length;
+  const calculateAverage = (arr: typeof amaraFullStory, key: 'energy' | 'mood' | 'sleep' | 'appetite') => {
+    if (key === 'energy') {
+      return arr.reduce((sum, e) => sum + (e.energy * 2), 0) / arr.length;
+    }
+    if (key === 'mood') {
+      const moodMap: Record<string, number> = { 'positive': 10, 'neutral': 7, 'low': 4, 'anxious': 3 };
+      return arr.reduce((sum, e) => sum + (moodMap[e.mood] || 5), 0) / arr.length;
+    }
+    if (key === 'sleep') {
+      return arr.reduce((sum, e) => sum + e.sleep.hours, 0) / arr.length;
+    }
+    if (key === 'appetite') {
+      const appetiteMap: Record<string, number> = { 'great': 10, 'good': 7, 'low': 4, 'very low': 2 };
+      return arr.reduce((sum, e) => sum + (appetiteMap[e.appetite] || 5), 0) / arr.length;
+    }
+    return 0;
   };
 
   const trends = {
-    energy: Math.round(((calculateAverage(secondHalf, 'energy') - calculateAverage(firstHalf, 'energy')) / calculateAverage(firstHalf, 'energy')) * 100),
-    mood: Math.round(((calculateAverage(secondHalf, 'mood') - calculateAverage(firstHalf, 'mood')) / calculateAverage(firstHalf, 'mood')) * 100),
-    sleep: Math.round(((calculateAverage(secondHalf, 'sleep') - calculateAverage(firstHalf, 'sleep')) / calculateAverage(firstHalf, 'sleep')) * 100),
+    energy: Math.round(((calculateAverage(secondHalf, 'energy') - calculateAverage(firstHalf, 'energy')) / (calculateAverage(firstHalf, 'energy') || 1)) * 100),
+    mood: Math.round(((calculateAverage(secondHalf, 'mood') - calculateAverage(firstHalf, 'mood')) / (calculateAverage(firstHalf, 'mood') || 1)) * 100),
+    sleep: Math.round(((calculateAverage(secondHalf, 'sleep') - calculateAverage(firstHalf, 'sleep')) / (calculateAverage(firstHalf, 'sleep') || 1)) * 100),
+    appetite: Math.round(((calculateAverage(secondHalf, 'appetite') - calculateAverage(firstHalf, 'appetite')) / (calculateAverage(firstHalf, 'appetite') || 1)) * 100),
   };
 
   // Heatmap calendar data (last 14 days)
@@ -66,19 +106,39 @@ export function AnalyticsView() {
             <h2 className="text-2xl font-bold text-foreground">Analytics</h2>
             <p className="text-sm text-muted-foreground mt-0.5">Track your health trends</p>
           </div>
-          <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-muted">
-            <Calendar className="w-4 h-4 text-muted-foreground" />
-            <select
-              value={timeRange}
-              onChange={(e) => setTimeRange(e.target.value as typeof timeRange)}
-              className="bg-transparent text-sm font-semibold text-foreground outline-none cursor-pointer"
-            >
-              <option value="7d">Last 7 days</option>
-              <option value="14d">Last 14 days</option>
-              <option value="30d">Last 30 days</option>
-            </select>
-            <ChevronDown className="w-4 h-4 text-muted-foreground" />
-          </div>
+          <Popover open={isTimeRangeOpen} onOpenChange={setIsTimeRangeOpen}>
+            <PopoverTrigger asChild>
+              <motion.button
+                whileTap={{ scale: 0.97 }}
+                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-muted hover:bg-muted/70 transition-colors"
+              >
+                <Calendar className="w-4 h-4 text-muted-foreground" />
+                <span className="text-sm font-semibold text-foreground">{selectedOption?.label}</span>
+                <ChevronDown className="w-4 h-4 text-muted-foreground" />
+              </motion.button>
+            </PopoverTrigger>
+            <PopoverContent className="w-48 p-2" align="end">
+              <div className="space-y-1">
+                {timeRangeOptions.map((option) => (
+                  <button
+                    key={option.value}
+                    onClick={() => {
+                      setTimeRange(option.value);
+                      setIsTimeRangeOpen(false);
+                    }}
+                    className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      timeRange === option.value
+                        ? 'bg-[#84CC16] text-white'
+                        : 'text-foreground hover:bg-muted'
+                    }`}
+                  >
+                    <span>{option.label}</span>
+                    {timeRange === option.value && <Check className="w-4 h-4" />}
+                  </button>
+                ))}
+              </div>
+            </PopoverContent>
+          </Popover>
         </div>
       </div>
 
@@ -114,7 +174,7 @@ export function AnalyticsView() {
             label="Avg Appetite"
             value={averages.appetite}
             max={10}
-            trend={0}
+            trend={trends.appetite}
             color="#14B8A6"
           />
         </div>
@@ -165,6 +225,7 @@ export function AnalyticsView() {
             { id: 'energy', label: 'Energy' },
             { id: 'mood', label: 'Mood' },
             { id: 'sleep', label: 'Sleep' },
+            { id: 'appetite', label: 'Appetite' },
           ].map((option) => (
             <motion.button
               key={option.id}
@@ -248,6 +309,17 @@ export function AnalyticsView() {
                   name="Sleep"
                 />
               )}
+              {(selectedMetric === 'all' || selectedMetric === 'appetite') && (
+                <Line
+                  type="monotone"
+                  dataKey="appetite"
+                  stroke="#14B8A6"
+                  strokeWidth={2}
+                  dot={{ fill: '#14B8A6', r: 4 }}
+                  activeDot={{ r: 6 }}
+                  name="Appetite"
+                />
+              )}
             </LineChart>
           </ResponsiveContainer>
         </div>
@@ -282,6 +354,7 @@ export function AnalyticsView() {
               <Bar dataKey="energy" fill="#84CC16" radius={[8, 8, 0, 0]} name="Energy" />
               <Bar dataKey="mood" fill="#F59E0B" radius={[8, 8, 0, 0]} name="Mood" />
               <Bar dataKey="sleep" fill="#A855F7" radius={[8, 8, 0, 0]} name="Sleep" />
+              <Bar dataKey="appetite" fill="#14B8A6" radius={[8, 8, 0, 0]} name="Appetite" />
             </BarChart>
           </ResponsiveContainer>
         </div>

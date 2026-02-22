@@ -97,23 +97,40 @@ export function DetailedMetricsModal({ isOpen, onClose, entry, fullHistory = [] 
 
 function MetricsCards({ entry }: { entry: CheckInEntry }) {
   return (
-    <div className="space-y-3 pb-4">
-      {/* Energy Card */}
-      <MetricCard
-        title="Energy Level"
-        emoji="⚡"
-        value={`${entry.energy}/5`}
-        status={entry.energy >= 4 ? 'good' : entry.energy >= 3 ? 'okay' : 'concerning'}
-      />
+    <div className="space-y-4 pb-4">
+      {/* Summary Overview Card (moved from home view) */}
+      <div className="bg-gradient-to-br from-[#84CC16]/10 to-[#A855F7]/10 rounded-3xl p-5 border border-[#84CC16]/20">
+        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-4">
+          Check-in Summary
+        </p>
+        <div className="grid grid-cols-2 gap-3">
+          {[
+            { label: 'Energy', value: `${entry.energy || 0}/5`, emoji: '⚡' },
+            { label: 'Sleep', value: `${entry.sleep?.hours || 0}h`, emoji: '🌙' },
+            { label: 'Mood', value: entry.mood || '—', emoji: '😊' },
+            { label: 'Appetite', value: entry.appetite || '—', emoji: '🍽️' },
+          ].map(({ label, value, emoji }) => (
+            <div key={label} className="bg-background/60 rounded-2xl p-3 backdrop-blur-sm">
+              <p className="text-xs text-muted-foreground mb-1">{emoji} {label}</p>
+              <p className="text-lg font-bold text-foreground capitalize">{value}</p>
+            </div>
+          ))}
+        </div>
+      </div>
 
       {/* Sleep Card */}
-      <MetricCard
-        title="Sleep"
-        emoji="🌙"
-        value={`${entry.sleep.hours} hours`}
-        subtitle={`Quality: ${entry.sleep.quality}`}
-        status={entry.sleep.hours >= 7 && entry.sleep.quality !== 'poor' ? 'good' : 'okay'}
-      />
+      <div className="bg-card rounded-2xl p-4 border border-border">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="text-2xl">🌙</span>
+            <div>
+              <p className="font-bold text-foreground">Sleep</p>
+              <p className="text-xs text-muted-foreground">Quality: {entry.sleep?.quality || '—'}</p>
+            </div>
+          </div>
+          <p className="text-lg font-bold text-foreground">{entry.sleep?.hours || 0} hours</p>
+        </div>
+      </div>
 
       {/* Symptoms Card */}
       <div className="bg-card rounded-2xl p-4 border border-border">
@@ -141,37 +158,37 @@ function MetricsCards({ entry }: { entry: CheckInEntry }) {
       </div>
 
       {/* Respiratory */}
-      <MetricCard
-        title="Respiratory"
-        emoji="🫁"
-        value={entry.respiratory ? 'Issues present' : 'Normal'}
-        status={entry.respiratory ? 'concerning' : 'good'}
-      />
+      <div className="bg-card rounded-2xl p-4 border border-border">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="text-2xl">🫁</span>
+            <p className="font-bold text-foreground">Respiratory</p>
+          </div>
+          <p className="text-lg font-bold text-foreground capitalize">
+            {entry.respiratory ? 'Issues present' : 'Normal'}
+          </p>
+        </div>
+      </div>
 
       {/* Temperature */}
-      <MetricCard
-        title="Body Temperature"
-        emoji="🌡️"
-        value={entry.temperature.hasFever ? `${entry.temperature.value}°C` : 'Normal'}
-        subtitle={entry.temperature.hasFever ? 'Fever detected' : 'No fever'}
-        status={entry.temperature.hasFever ? 'concerning' : 'good'}
-      />
-
-      {/* Mood */}
-      <MetricCard
-        title="Mood & Mental State"
-        emoji="😊"
-        value={entry.mood}
-        status={entry.mood === 'positive' ? 'good' : entry.mood === 'neutral' ? 'okay' : 'concerning'}
-      />
-
-      {/* Appetite */}
-      <MetricCard
-        title="Appetite"
-        emoji="🍽️"
-        value={entry.appetite}
-        status={entry.appetite === 'great' || entry.appetite === 'good' ? 'good' : 'okay'}
-      />
+      <div className="bg-card rounded-2xl p-4 border border-border">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="text-2xl">🌡️</span>
+            <div>
+              <p className="font-bold text-foreground">Body Temperature</p>
+              {entry.temperature?.hasFever && (
+                <p className="text-xs text-muted-foreground">Fever detected</p>
+              )}
+            </div>
+          </div>
+          <p className="text-lg font-bold text-foreground">
+            {entry.temperature?.hasFever && entry.temperature?.value 
+              ? `${entry.temperature.value}°C` 
+              : 'Normal'}
+          </p>
+        </div>
+      </div>
 
       {/* Lifestyle */}
       <div className="bg-card rounded-2xl p-4 border border-border">
@@ -180,13 +197,13 @@ function MetricsCards({ entry }: { entry: CheckInEntry }) {
           <p className="font-bold text-foreground">Lifestyle</p>
         </div>
         <div className="grid grid-cols-2 gap-2">
-          <LifestyleItem label="Hydration" value={entry.lifestyle.water} icon="💧" />
-          <LifestyleItem label="Exercise" value={entry.lifestyle.exercise} icon="🏃" />
-          <LifestyleItem label="Meditation" value={entry.lifestyle.meditation} icon="🧘" />
-          <LifestyleItem label="Screen Time" value={entry.lifestyle.screenTime === 'normal'} icon="📱" />
-          <LifestyleItem label="Social" value={entry.lifestyle.social !== 'isolated'} icon="👥" />
+          <LifestyleItem label="Hydration" value={entry.lifestyle?.water || false} icon="💧" />
+          <LifestyleItem label="Exercise" value={entry.lifestyle?.exercise || false} icon="🏃" />
+          <LifestyleItem label="Meditation" value={entry.lifestyle?.meditation || false} icon="🧘" />
+          <LifestyleItem label="Screen Time" value={entry.lifestyle?.screenTime === 'normal'} icon="📱" />
+          <LifestyleItem label="Social" value={entry.lifestyle?.social !== 'isolated'} icon="👥" />
         </div>
-        {entry.lifestyle.customNote && (
+        {entry.lifestyle?.customNote && (
           <div className="mt-3 p-2 bg-muted rounded-xl">
             <p className="text-xs text-muted-foreground mb-1">Note</p>
             <p className="text-sm text-foreground">{entry.lifestyle.customNote}</p>
@@ -211,8 +228,8 @@ function MetricsCards({ entry }: { entry: CheckInEntry }) {
           <span className="text-2xl">🤖</span>
           <p className="font-bold text-foreground">AI Analysis</p>
         </div>
-        <p className="text-sm text-foreground/80 mb-3">{entry.aiAnalysis.summary}</p>
-        {entry.aiAnalysis.patterns_detected.length > 0 && (
+        <p className="text-sm text-foreground/80 mb-3">{entry.aiAnalysis?.summary || 'No analysis available'}</p>
+        {entry.aiAnalysis?.patterns_detected && entry.aiAnalysis.patterns_detected.length > 0 && (
           <div>
             <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">Patterns Detected</p>
             <div className="space-y-1">
@@ -222,41 +239,6 @@ function MetricsCards({ entry }: { entry: CheckInEntry }) {
             </div>
           </div>
         )}
-      </div>
-    </div>
-  );
-}
-
-function MetricCard({ 
-  title, 
-  emoji, 
-  value, 
-  subtitle, 
-  status 
-}: { 
-  title: string; 
-  emoji: string; 
-  value: string; 
-  subtitle?: string; 
-  status: 'good' | 'okay' | 'concerning';
-}) {
-  const statusColors = {
-    good: 'border-green-500/20 bg-green-500/5',
-    okay: 'border-yellow-500/20 bg-yellow-500/5',
-    concerning: 'border-red-500/20 bg-red-500/5',
-  };
-
-  return (
-    <div className={`rounded-2xl p-4 border ${statusColors[status]}`}>
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <span className="text-2xl">{emoji}</span>
-          <div>
-            <p className="font-bold text-foreground">{title}</p>
-            {subtitle && <p className="text-xs text-muted-foreground">{subtitle}</p>}
-          </div>
-        </div>
-        <p className="text-lg font-bold text-foreground capitalize">{value}</p>
       </div>
     </div>
   );
